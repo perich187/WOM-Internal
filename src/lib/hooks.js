@@ -17,6 +17,50 @@ export function useClients() {
   })
 }
 
+export function useCreateClient() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ clientName, industry, website, notes, status }) => {
+      const { data, error } = await supabase
+        .from('clients')
+        .insert({ client_name: clientName, industry, website, notes, status: status ?? 'Active' })
+        .select()
+        .single()
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['clients'] }),
+  })
+}
+
+export function useUpdateClient() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...updates }) => {
+      const { data, error } = await supabase
+        .from('clients')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .select()
+        .single()
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['clients'] }),
+  })
+}
+
+export function useDeleteClient() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id) => {
+      const { error } = await supabase.from('clients').delete().eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['clients'] }),
+  })
+}
+
 export function useClient(id) {
   return useQuery({
     queryKey: ['clients', id],

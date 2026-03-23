@@ -1,34 +1,94 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Search, Link2, CalendarDays, BarChart3, Building2, Loader2 } from 'lucide-react'
-import { useClients, useSocialAccounts, useSocialPosts } from '@/lib/hooks'
+import { Plus, Search, Link2, CalendarDays, BarChart3, Building2, Loader2, X, Pencil, Trash2 } from 'lucide-react'
+import { useClients, useSocialAccounts, useSocialPosts, useCreateClient, useUpdateClient, useDeleteClient } from '@/lib/hooks'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 
-const INDUSTRY_FILTERS = ['All']
 
-function AddClientModal({ onClose }) {
-  const [name, setName] = useState('')
-  const [industry, setIndustry] = useState('')
+const INDUSTRIES = [
+  'Retail', 'Hospitality', 'Real Estate', 'Healthcare', 'Finance',
+  'Technology', 'Education', 'Construction', 'Automotive', 'Legal',
+  'Beauty & Wellness', 'Food & Beverage', 'Entertainment', 'Non-Profit', 'Other',
+]
+
+function ClientModal({ client, onClose }) {
+  const isEdit = !!client
+  const createMutation = useCreateClient()
+  const updateMutation = useUpdateClient()
+
+  const [name,     setName]     = useState(client?.client_name ?? '')
+  const [industry, setIndustry] = useState(client?.industry ?? '')
+  const [website,  setWebsite]  = useState(client?.website ?? '')
+  const [notes,    setNotes]    = useState(client?.notes ?? '')
+  const [status,   setStatus]   = useState(client?.status ?? 'Active')
+
+  const isPending = createMutation.isPending || updateMutation.isPending
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    try {
+      if (isEdit) {
+        await updateMutation.mutateAsync({ id: client.id, client_name: name, industry, website, notes, status })
+        toast.success('Client updated')
+      } else {
+        await createMutation.mutateAsync({ clientName: name, industry, website, notes, status })
+        toast.success('Client added')
+      }
+      onClose()
+    } catch (err) {
+      toast.error(err.message ?? 'Something went wrong')
+    }
+  }
+
+  const fieldClass = 'w-full px-3.5 py-2.5 text-sm rounded-xl border border-[#EDE8DC] bg-white focus:outline-none focus:ring-2 focus:ring-wom-gold/30 focus:border-wom-gold'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-fade-in">
-        <h2 className="text-lg font-bold text-[#092137] mb-5">Add New Client</h2>
-        <p className="text-sm text-[#092137]/50 mb-5">
-          Clients are managed in the WOM Dashboard. New clients added there will appear here automatically.
-        </p>
-        <div className="flex gap-3">
-          <button onClick={onClose} className="btn-secondary flex-1">Close</button>
-          <a
-            href="https://ofjaxchkkemsrbbcdwnh.supabase.co"
-            target="_blank"
-            rel="noreferrer"
-            className="btn-primary flex-1 justify-center"
-          >
-            Open Dashboard
-          </a>
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-lg font-bold text-[#092137]">{isEdit ? 'Edit Client' : 'Add New Client'}</h2>
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-[#F5F1E9] flex items-center justify-center text-[#092137]/50 hover:bg-[#EDE8DC] transition-colors">
+            <X size={16} />
+          </button>
         </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-[#092137]/60 uppercase tracking-wider mb-1.5">Client Name *</label>
+            <input required value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Coastal Café" className={fieldClass} />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-[#092137]/60 uppercase tracking-wider mb-1.5">Industry</label>
+            <select value={industry} onChange={e => setIndustry(e.target.value)} className={fieldClass}>
+              <option value="">Select industry...</option>
+              {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-[#092137]/60 uppercase tracking-wider mb-1.5">Website</label>
+            <input value={website} onChange={e => setWebsite(e.target.value)} placeholder="https://example.com.au" className={fieldClass} />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-[#092137]/60 uppercase tracking-wider mb-1.5">Notes</label>
+            <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Any notes about this client..." rows={3} className={fieldClass + ' resize-none'} />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-[#092137]/60 uppercase tracking-wider mb-1.5">Status</label>
+            <select value={status} onChange={e => setStatus(e.target.value)} className={fieldClass}>
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose} className="btn-secondary flex-1">Cancel</button>
+            <button type="submit" disabled={isPending} className="btn-primary flex-1 justify-center disabled:opacity-60">
+              {isPending ? <Loader2 size={15} className="animate-spin" /> : (isEdit ? 'Save Changes' : 'Add Client')}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   )
@@ -44,13 +104,24 @@ function clientColor(name) {
 
 export default function Clients() {
   const navigate = useNavigate()
-  const [search, setSearch] = useState('')
-  const [filter, setFilter] = useState('All')
-  const [showAdd, setShowAdd] = useState(false)
+  const [search,       setSearch]       = useState('')
+  const [filter,       setFilter]       = useState('All')
+  const [modalClient,  setModalClient]  = useState(null)  // null = closed, {} = new, client = edit
+  const deleteMutation = useDeleteClient()
 
   const { data: clients, isLoading } = useClients()
   const { data: accounts } = useSocialAccounts()
   const { data: posts } = useSocialPosts()
+
+  const handleDelete = async (client) => {
+    if (!confirm(`Delete "${client.client_name}"? This cannot be undone.`)) return
+    try {
+      await deleteMutation.mutateAsync(client.id)
+      toast.success('Client deleted')
+    } catch (err) {
+      toast.error(err.message ?? 'Failed to delete client')
+    }
+  }
 
   // Build per-client stats from real data
   const clientStats = {}
@@ -100,7 +171,7 @@ export default function Clients() {
             </button>
           ))}
         </div>
-        <button onClick={() => setShowAdd(true)} className="btn-primary ml-auto whitespace-nowrap">
+        <button onClick={() => setModalClient({})} className="btn-primary ml-auto whitespace-nowrap">
           <Plus size={16} /> Add Client
         </button>
       </div>
@@ -178,8 +249,11 @@ export default function Clients() {
                   <button onClick={() => navigate(`/calendar?client=${client.id}`)} className="btn-ghost text-xs flex-1 justify-center">
                     <CalendarDays size={14} /> Calendar
                   </button>
-                  <button onClick={() => navigate(`/analytics?client=${client.id}`)} className="btn-ghost text-xs flex-1 justify-center">
-                    <BarChart3 size={14} /> Analytics
+                  <button onClick={() => setModalClient(client)} className="btn-ghost text-xs px-3 justify-center" title="Edit client">
+                    <Pencil size={14} />
+                  </button>
+                  <button onClick={() => handleDelete(client)} className="btn-danger text-xs px-3 justify-center" title="Delete client">
+                    <Trash2 size={14} />
                   </button>
                 </div>
               </div>
@@ -188,7 +262,12 @@ export default function Clients() {
         </div>
       )}
 
-      {showAdd && <AddClientModal onClose={() => setShowAdd(false)} />}
+      {modalClient !== null && (
+        <ClientModal
+          client={Object.keys(modalClient).length ? modalClient : null}
+          onClose={() => setModalClient(null)}
+        />
+      )}
     </div>
   )
 }
