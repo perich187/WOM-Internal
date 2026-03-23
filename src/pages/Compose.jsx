@@ -1,7 +1,11 @@
-import { useState } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Image, Video, Smile, Hash, Link2, Calendar as CalIcon, Send, Save, Eye, Check, AlertCircle, Info, Loader2 } from 'lucide-react'
-import { useClients, useSocialAccounts, useCreatePost } from '@/lib/hooks'
+import {
+  Image, Video, Smile, Hash, Link2, Calendar as CalIcon,
+  Send, Save, Eye, Check, AlertCircle, Info, Loader2,
+  X, Upload, Plus, MessageSquare,
+} from 'lucide-react'
+import { useClients, useSocialAccounts, useCreatePost, useUploadMedia, useDeleteMedia } from '@/lib/hooks'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useProfile } from '@/lib/hooks'
 import { PLATFORMS, cn } from '@/lib/utils'
@@ -13,6 +17,12 @@ const CHARACTER_LIMITS = {
   instagram: 2200, facebook: 63206, tiktok: 2200, linkedin: 3000,
   twitter: 280, pinterest: 500, youtube: 5000, google: 1500,
 }
+
+const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+const ACCEPTED_VIDEO_TYPES = ['video/mp4', 'video/mov', 'video/quicktime', 'video/mpeg']
+const MAX_FILE_SIZE_MB = 50
+
+// ─── Platform toggle ──────────────────────────────────────────────────────────
 
 function PlatformToggle({ platform, selected, connected, onChange }) {
   return (
@@ -35,13 +45,45 @@ function PlatformToggle({ platform, selected, connected, onChange }) {
   )
 }
 
-function PostPreview({ content, platform, client }) {
+// ─── Media thumbnail ──────────────────────────────────────────────────────────
+
+function MediaThumb({ media, onRemove, uploading }) {
+  const isVideo = media.type?.startsWith('video') || media.url?.match(/\.(mp4|mov|mpeg)$/i)
+  return (
+    <div className="relative w-20 h-20 rounded-lg overflow-hidden border border-[#EDE8DC] bg-[#F5F1E9] flex-shrink-0">
+      {uploading ? (
+        <div className="w-full h-full flex items-center justify-center">
+          <Loader2 size={20} className="animate-spin text-wom-gold" />
+        </div>
+      ) : isVideo ? (
+        <div className="w-full h-full flex items-center justify-center bg-[#092137]/10">
+          <Video size={24} className="text-[#092137]/40" />
+        </div>
+      ) : (
+        <img src={media.preview ?? media.url} alt="" className="w-full h-full object-cover" />
+      )}
+      {!uploading && (
+        <button
+          onClick={() => onRemove(media)}
+          className="absolute top-0.5 right-0.5 w-5 h-5 bg-[#092137]/70 hover:bg-red-500 rounded-full flex items-center justify-center text-white transition-colors"
+        >
+          <X size={11} />
+        </button>
+      )}
+    </div>
+  )
+}
+
+// ─── Post preview ─────────────────────────────────────────────────────────────
+
+function PostPreview({ content, platform, client, mediaItems }) {
   if (!platform) return null
   const charLimit = CHARACTER_LIMITS[platform] ?? 2200
   const overLimit = content.length > charLimit
   const isDark = platform === 'tiktok'
   const previewBg = { instagram: 'bg-white', facebook: 'bg-[#f0f2f5]', tiktok: 'bg-black', linkedin: 'bg-[#f3f2ef]', twitter: 'bg-white' }[platform] ?? 'bg-white'
   const clientName = client?.client_name ?? 'Client'
+  const images = mediaItems.filter(m => !m.type?.startsWith('video') && !m.url?.match(/\.(mp4|mov|mpeg)$/i))
 
   return (
     <div className={cn('rounded-xl overflow-hidden border', isDark ? 'border-gray-700' : 'border-[#EDE8DC]')}>
@@ -56,18 +98,38 @@ function PostPreview({ content, platform, client }) {
           </div>
           <div>
             <p className={cn('text-xs font-semibold leading-tight', isDark ? 'text-white' : 'text-[#092137]')}>{clientName}</p>
-            <p className={cn('text-xs leading-tight', isDark ? 'text-[#092137]/40' : 'text-[#092137]/50')}>Just now</p>
+            <p className={cn('text-xs leading-tight', isDark ? 'text-gray-400' : 'text-[#092137]/50')}>Just now</p>
           </div>
         </div>
+
+        {/* Media preview */}
+        {images.length > 0 && (
+          <div className={cn('mb-3 rounded-lg overflow-hidden',
+            images.length === 1 ? '' : 'grid grid-cols-2 gap-0.5'
+          )}>
+            {images.slice(0, 4).map((m, i) => (
+              <div key={i} className={cn('relative', images.length === 1 ? 'aspect-square' : 'aspect-square')}>
+                <img src={m.preview ?? m.url} alt="" className="w-full h-full object-cover" />
+                {i === 3 && images.length > 4 && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                    <span className="text-white font-bold text-lg">+{images.length - 4}</span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
         {content ? (
           <p className={cn('text-sm whitespace-pre-wrap leading-relaxed', isDark ? 'text-white' : 'text-[#092137]')}>
             {content.slice(0, charLimit)}
             {overLimit && <span className="text-red-400"> [truncated]</span>}
           </p>
         ) : (
-          <p className={cn('text-sm italic', isDark ? 'text-[#092137]/50' : 'text-[#092137]/40')}>Your post will appear here...</p>
+          <p className={cn('text-sm italic', isDark ? 'text-gray-500' : 'text-[#092137]/40')}>Your post will appear here...</p>
         )}
-        <div className={cn('flex gap-4 mt-3 pt-3 border-t text-xs', isDark ? 'border-gray-700 text-[#092137]/40' : 'border-[#EDE8DC] text-[#092137]/40')}>
+
+        <div className={cn('flex gap-4 mt-3 pt-3 border-t text-xs', isDark ? 'border-gray-700 text-gray-400' : 'border-[#EDE8DC] text-[#092137]/40')}>
           <span>❤️ Like</span><span>💬 Comment</span><span>↗️ Share</span>
         </div>
       </div>
@@ -78,25 +140,92 @@ function PostPreview({ content, platform, client }) {
   )
 }
 
+// ─── Drop zone ────────────────────────────────────────────────────────────────
+
+function DropZone({ onFiles, disabled }) {
+  const [dragging, setDragging] = useState(false)
+  const inputRef = useRef(null)
+
+  const processFiles = (files) => {
+    const valid = Array.from(files).filter(f => {
+      if (f.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+        toast.error(`${f.name} is too large (max ${MAX_FILE_SIZE_MB}MB)`)
+        return false
+      }
+      if (![...ACCEPTED_IMAGE_TYPES, ...ACCEPTED_VIDEO_TYPES].includes(f.type)) {
+        toast.error(`${f.name} is not a supported file type`)
+        return false
+      }
+      return true
+    })
+    if (valid.length) onFiles(valid)
+  }
+
+  const onDrop = useCallback((e) => {
+    e.preventDefault()
+    setDragging(false)
+    processFiles(e.dataTransfer.files)
+  }, [onFiles])
+
+  return (
+    <div
+      onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
+      onDragLeave={() => setDragging(false)}
+      onDrop={onDrop}
+      onClick={() => !disabled && inputRef.current?.click()}
+      className={cn(
+        'border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all',
+        dragging ? 'border-wom-gold bg-[#FEF8EC]' : 'border-[#EDE8DC] hover:border-wom-gold/50 hover:bg-[#F5F1E9]',
+        disabled && 'opacity-40 cursor-not-allowed'
+      )}
+    >
+      <input
+        ref={inputRef}
+        type="file"
+        accept={[...ACCEPTED_IMAGE_TYPES, ...ACCEPTED_VIDEO_TYPES].join(',')}
+        multiple
+        className="hidden"
+        onChange={(e) => processFiles(e.target.files)}
+        disabled={disabled}
+      />
+      <Upload size={24} className="mx-auto mb-2 text-[#092137]/30" />
+      <p className="text-sm text-[#092137]/50 font-medium">
+        {dragging ? 'Drop files here' : 'Drag & drop or click to upload'}
+      </p>
+      <p className="text-xs text-[#092137]/30 mt-1">JPG, PNG, GIF, WebP, MP4 · Max {MAX_FILE_SIZE_MB}MB</p>
+    </div>
+  )
+}
+
+// ─── Main page ────────────────────────────────────────────────────────────────
+
 export default function Compose() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { data: profile } = useProfile(user?.id)
 
-  const [selectedClientId, setSelectedClientId] = useState('')
+  const [selectedClientId, setSelectedClientId]   = useState('')
   const [selectedPlatforms, setSelectedPlatforms] = useState([])
-  const [content, setContent] = useState('')
-  const [scheduleType, setScheduleType] = useState('schedule')
-  const [scheduleDate, setScheduleDate] = useState(format(addDays(new Date(), 1), "yyyy-MM-dd'T'HH:mm"))
-  const [previewPlatform, setPreviewPlatform] = useState(null)
-  const [step, setStep] = useState(1)
+  const [content, setContent]                     = useState('')
+  const [firstComment, setFirstComment]           = useState('')
+  const [showFirstComment, setShowFirstComment]   = useState(false)
+  const [scheduleType, setScheduleType]           = useState('schedule')
+  const [scheduleDate, setScheduleDate]           = useState(format(addDays(new Date(), 1), "yyyy-MM-dd'T'HH:mm"))
+  const [previewPlatform, setPreviewPlatform]     = useState(null)
+  const [step, setStep]                           = useState(1)
+
+  // mediaItems: [{ file, preview, url, path, uploading }]
+  const [mediaItems, setMediaItems] = useState([])
 
   const { data: clients, isLoading: clientsLoading } = useClients()
   const { data: accounts } = useSocialAccounts(selectedClientId || undefined)
-  const createPost = useCreatePost()
+  const createPost    = useCreatePost()
+  const uploadMedia   = useUploadMedia()
+  const deleteMedia   = useDeleteMedia()
 
   const client = (clients ?? []).find(c => c.id === selectedClientId)
   const connectedPlatformIds = (accounts ?? []).filter(a => a.connected).map(a => a.platform)
+  const hasInstagram = selectedPlatforms.includes('instagram')
 
   const togglePlatform = (id) => {
     setSelectedPlatforms(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id])
@@ -105,23 +234,67 @@ export default function Compose() {
 
   const canProceed1 = selectedClientId && selectedPlatforms.length > 0
   const canProceed2 = content.trim().length > 0
+  const isUploading = mediaItems.some(m => m.uploading)
 
+  // ── File upload handler ──────────────────────────────────────
+  const handleFiles = async (files) => {
+    const newItems = files.map(file => ({
+      id:        Math.random().toString(36).slice(2),
+      file,
+      type:      file.type,
+      preview:   URL.createObjectURL(file),
+      url:       null,
+      path:      null,
+      uploading: true,
+    }))
+    setMediaItems(prev => [...prev, ...newItems])
+
+    for (const item of newItems) {
+      try {
+        const result = await uploadMedia.mutateAsync({ file: item.file, clientId: selectedClientId || 'temp' })
+        setMediaItems(prev => prev.map(m =>
+          m.id === item.id ? { ...m, url: result.url, path: result.path, uploading: false } : m
+        ))
+      } catch (err) {
+        toast.error(`Failed to upload ${item.file.name}: ${err.message}`)
+        setMediaItems(prev => prev.filter(m => m.id !== item.id))
+      }
+    }
+  }
+
+  // ── Remove media ─────────────────────────────────────────────
+  const handleRemoveMedia = async (media) => {
+    setMediaItems(prev => prev.filter(m => m.id !== media.id))
+    if (media.preview) URL.revokeObjectURL(media.preview)
+    if (media.path) {
+      try { await deleteMedia.mutateAsync(media.path) } catch { /* best effort */ }
+    }
+  }
+
+  // ── Submit ───────────────────────────────────────────────────
   const handleSubmit = async () => {
+    if (isUploading) {
+      toast.error('Please wait for media uploads to finish.')
+      return
+    }
     try {
-      const status = scheduleType === 'draft' ? 'draft' : scheduleType === 'now' ? 'published' : 'scheduled'
+      const status      = scheduleType === 'draft' ? 'draft' : scheduleType === 'now' ? 'published' : 'scheduled'
       const scheduledAt = scheduleType === 'schedule' ? new Date(scheduleDate).toISOString() : null
+      const mediaUrls   = mediaItems.filter(m => m.url).map(m => m.url)
 
       await createPost.mutateAsync({
-        clientId: selectedClientId,
-        platforms: selectedPlatforms,
+        clientId:     selectedClientId,
+        platforms:    selectedPlatforms,
         content,
         status,
         scheduledAt,
         createdByName: profile?.full_name ?? user?.email ?? 'Unknown',
+        mediaUrls,
+        firstComment: showFirstComment && firstComment.trim() ? firstComment.trim() : null,
       })
 
       toast.success(
-        status === 'draft' ? 'Draft saved!' :
+        status === 'draft'     ? 'Draft saved!' :
         status === 'published' ? 'Post published!' :
         'Post scheduled!'
       )
@@ -145,7 +318,7 @@ export default function Compose() {
                 <button
                   onClick={() => stepNum < step && setStep(stepNum)}
                   className={cn('w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all',
-                    isDone ? 'bg-wom-teal text-white cursor-pointer' :
+                    isDone   ? 'bg-wom-teal text-white cursor-pointer' :
                     isActive ? 'bg-wom-gold text-[#092137]' : 'bg-[#EDE8DC] text-[#092137]/40'
                   )}
                 >
@@ -160,10 +333,10 @@ export default function Compose() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
-        {/* Composer */}
+        {/* ── Composer ── */}
         <div className="lg:col-span-3 space-y-4">
 
-          {/* Step 1 */}
+          {/* Step 1 — Client & Platforms */}
           {step === 1 && (
             <div className="bg-white rounded-xl border border-[#EDE8DC] p-5 space-y-4 animate-fade-in">
               <h3 className="font-semibold text-[#092137]">Select Client</h3>
@@ -221,7 +394,7 @@ export default function Compose() {
             </div>
           )}
 
-          {/* Step 2 */}
+          {/* Step 2 — Write Content */}
           {step === 2 && (
             <div className="bg-white rounded-xl border border-[#EDE8DC] p-5 space-y-4 animate-fade-in">
               <div className="flex items-center justify-between">
@@ -247,17 +420,19 @@ export default function Compose() {
                 })}
               </div>
 
+              {/* Caption textarea */}
               <div className="relative">
                 <textarea
                   value={content}
                   onChange={e => setContent(e.target.value)}
-                  placeholder="What would you like to share? Write your post here..."
-                  rows={8}
+                  placeholder="Write your caption here... Use # for hashtags, @ to mention accounts"
+                  rows={6}
                   className="w-full p-4 text-sm border border-[#EDE8DC] rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-wom-gold/30 focus:border-wom-gold leading-relaxed"
                 />
                 <div className="absolute bottom-3 right-3 text-xs text-gray-300">{content.length} chars</div>
               </div>
 
+              {/* Character limit warnings */}
               {selectedPlatforms.map(p => {
                 const limit = CHARACTER_LIMITS[p]
                 if (content.length > limit) return (
@@ -268,34 +443,87 @@ export default function Compose() {
                 return null
               })}
 
-              <div className="flex items-center gap-1 pt-1 border-t border-[#EDE8DC]">
-                {[{ icon: Image, title: 'Add image' }, { icon: Video, title: 'Add video' }, { icon: Smile, title: 'Add emoji' }, { icon: Hash, title: 'Add hashtag' }, { icon: Link2, title: 'Add link' }].map(({ icon: Icon, title }) => (
-                  <button key={title} className="w-8 h-8 rounded-lg hover:bg-[#EDE8DC] flex items-center justify-center text-[#092137]/40 hover:text-[#092137]/60 transition-colors" title={title}>
-                    <Icon size={16} />
-                  </button>
-                ))}
-                <span className="text-xs text-gray-300 ml-auto">Media upload via Supabase Storage (coming soon)</span>
+              {/* Media section */}
+              <div className="space-y-3 pt-1 border-t border-[#EDE8DC]">
+                <p className="text-xs font-semibold text-[#092137]/60 uppercase tracking-wider pt-1">Media</p>
+
+                {mediaItems.length > 0 && (
+                  <div className="flex gap-2 flex-wrap">
+                    {mediaItems.map(m => (
+                      <MediaThumb key={m.id} media={m} onRemove={handleRemoveMedia} uploading={m.uploading} />
+                    ))}
+                    {/* Add more button */}
+                    {mediaItems.length < 10 && (
+                      <label className="w-20 h-20 rounded-lg border-2 border-dashed border-[#EDE8DC] hover:border-wom-gold/50 flex items-center justify-center cursor-pointer transition-colors flex-shrink-0">
+                        <input
+                          type="file"
+                          accept={[...ACCEPTED_IMAGE_TYPES, ...ACCEPTED_VIDEO_TYPES].join(',')}
+                          multiple
+                          className="hidden"
+                          onChange={(e) => handleFiles(Array.from(e.target.files))}
+                        />
+                        <Plus size={20} className="text-[#092137]/30" />
+                      </label>
+                    )}
+                  </div>
+                )}
+
+                {mediaItems.length === 0 && (
+                  <DropZone onFiles={handleFiles} disabled={!selectedClientId} />
+                )}
+
+                {isUploading && (
+                  <p className="text-xs text-[#092137]/40 flex items-center gap-1">
+                    <Loader2 size={12} className="animate-spin" /> Uploading media...
+                  </p>
+                )}
               </div>
+
+              {/* First comment (Instagram) */}
+              {hasInstagram && (
+                <div className="pt-1 border-t border-[#EDE8DC]">
+                  <button
+                    onClick={() => setShowFirstComment(v => !v)}
+                    className="flex items-center gap-2 text-xs text-[#092137]/60 hover:text-[#092137] transition-colors"
+                  >
+                    <MessageSquare size={13} />
+                    {showFirstComment ? 'Remove first comment' : '+ Add first comment (Instagram)'}
+                  </button>
+                  {showFirstComment && (
+                    <div className="mt-2">
+                      <textarea
+                        value={firstComment}
+                        onChange={e => setFirstComment(e.target.value)}
+                        placeholder="First comment (great for hashtags on Instagram)..."
+                        rows={3}
+                        maxLength={2200}
+                        className="w-full p-3 text-sm border border-[#EDE8DC] rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-wom-gold/30 focus:border-wom-gold leading-relaxed"
+                      />
+                      <p className="text-xs text-[#092137]/30 text-right mt-1">{firstComment.length} / 2,200</p>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="flex gap-3 pt-2">
                 <button onClick={() => setStep(1)} className="btn-secondary">← Back</button>
-                <button disabled={!canProceed2} onClick={() => setStep(3)} className="btn-primary flex-1 justify-center disabled:opacity-40 disabled:cursor-not-allowed">
-                  Continue to Schedule →
+                <button disabled={!canProceed2 || isUploading} onClick={() => setStep(3)} className="btn-primary flex-1 justify-center disabled:opacity-40 disabled:cursor-not-allowed">
+                  {isUploading ? <><Loader2 size={14} className="animate-spin" /> Uploading...</> : 'Continue to Schedule →'}
                 </button>
               </div>
             </div>
           )}
 
-          {/* Step 3 */}
+          {/* Step 3 — Schedule & Publish */}
           {step === 3 && (
             <div className="bg-white rounded-xl border border-[#EDE8DC] p-5 space-y-4 animate-fade-in">
               <h3 className="font-semibold text-[#092137]">When to Publish?</h3>
 
               <div className="space-y-2">
                 {[
-                  { value: 'now', label: 'Publish immediately', desc: 'Goes live right now across all selected platforms', icon: Send },
-                  { value: 'schedule', label: 'Schedule for later', desc: 'Set a specific date and time', icon: CalIcon },
-                  { value: 'draft', label: 'Save as draft', desc: 'Save without publishing or scheduling', icon: Save },
+                  { value: 'now',      label: 'Publish immediately', desc: 'Goes live right now across all selected platforms', icon: Send },
+                  { value: 'schedule', label: 'Schedule for later',  desc: 'Set a specific date and time',                     icon: CalIcon },
+                  { value: 'draft',    label: 'Save as draft',       desc: 'Save without publishing or scheduling',             icon: Save },
                 ].map(({ value, label, desc, icon: Icon }) => (
                   <button
                     key={value}
@@ -331,7 +559,7 @@ export default function Compose() {
                 </div>
               )}
 
-              {/* Summary */}
+              {/* Post summary */}
               <div className="bg-[#F5F1E9] rounded-xl p-4 text-sm space-y-2">
                 <p className="font-semibold text-[#092137]/80">Post Summary</p>
                 <div className="flex items-center gap-2 text-[#092137]/60">
@@ -342,26 +570,38 @@ export default function Compose() {
                   <span className="text-[#092137]/40 w-20 text-xs">Platforms:</span>
                   <div className="flex gap-1">{selectedPlatforms.map(p => <PlatformIcon key={p} platform={p} size={16} />)}</div>
                 </div>
+                {mediaItems.length > 0 && (
+                  <div className="flex items-center gap-2 text-[#092137]/60">
+                    <span className="text-[#092137]/40 w-20 text-xs">Media:</span>
+                    <span>{mediaItems.filter(m => !m.uploading).length} file{mediaItems.length !== 1 ? 's' : ''} attached</span>
+                  </div>
+                )}
                 <div className="flex items-start gap-2 text-[#092137]/60">
-                  <span className="text-[#092137]/40 w-20 text-xs flex-shrink-0">Content:</span>
+                  <span className="text-[#092137]/40 w-20 text-xs flex-shrink-0">Caption:</span>
                   <span className="text-xs line-clamp-2">{content}</span>
                 </div>
+                {firstComment && showFirstComment && (
+                  <div className="flex items-start gap-2 text-[#092137]/60">
+                    <span className="text-[#092137]/40 w-20 text-xs flex-shrink-0">1st comment:</span>
+                    <span className="text-xs line-clamp-2">{firstComment}</span>
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-3">
                 <button onClick={() => setStep(2)} className="btn-secondary">← Back</button>
-                <button onClick={handleSubmit} disabled={createPost.isPending} className="btn-primary flex-1 justify-center">
+                <button onClick={handleSubmit} disabled={createPost.isPending || isUploading} className="btn-primary flex-1 justify-center">
                   {createPost.isPending ? <Loader2 size={15} className="animate-spin" /> :
-                   scheduleType === 'now' ? <><Send size={15} /> Publish Now</> :
+                   scheduleType === 'now'      ? <><Send size={15} />    Publish Now</> :
                    scheduleType === 'schedule' ? <><CalIcon size={15} /> Schedule Post</> :
-                   <><Save size={15} /> Save Draft</>}
+                                                 <><Save size={15} />    Save Draft</>}
                 </button>
               </div>
             </div>
           )}
         </div>
 
-        {/* Preview */}
+        {/* ── Preview panel ── */}
         <div className="lg:col-span-2 space-y-3">
           <div className="sticky top-24">
             <h3 className="font-semibold text-[#092137]/80 text-sm mb-3 flex items-center gap-2"><Eye size={15} /> Live Preview</h3>
@@ -386,7 +626,12 @@ export default function Compose() {
                     </button>
                   ))}
                 </div>
-                <PostPreview content={content} platform={previewPlatform ?? selectedPlatforms[0]} client={client} />
+                <PostPreview
+                  content={content}
+                  platform={previewPlatform ?? selectedPlatforms[0]}
+                  client={client}
+                  mediaItems={mediaItems.filter(m => !m.uploading)}
+                />
               </div>
             )}
 
@@ -397,6 +642,7 @@ export default function Compose() {
                 <li>Use 3–5 hashtags on Instagram for best reach</li>
                 <li>LinkedIn posts with images get 2x more engagement</li>
                 <li>TikTok videos under 30s get highest completion rates</li>
+                <li>Square images (1:1) perform best on Instagram</li>
               </ul>
             </div>
           </div>

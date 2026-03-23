@@ -77,6 +77,7 @@ CREATE TABLE IF NOT EXISTS social_posts (
   platforms       TEXT[] NOT NULL DEFAULT '{}',
   content         TEXT NOT NULL DEFAULT '',
   media_urls      TEXT[] DEFAULT '{}',
+  first_comment   TEXT,
   status          TEXT DEFAULT 'draft',
   scheduled_at    TIMESTAMPTZ,
   published_at    TIMESTAMPTZ,

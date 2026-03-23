@@ -153,10 +153,36 @@ export function useSocialPosts({ clientId, status } = {}) {
   })
 }
 
+export function useUploadMedia() {
+  return useMutation({
+    mutationFn: async ({ file, clientId }) => {
+      const ext  = file.name.split('.').pop()
+      const path = `${clientId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+      const { error } = await supabase.storage
+        .from('social-media')
+        .upload(path, file, { upsert: false })
+      if (error) throw error
+      const { data: { publicUrl } } = supabase.storage
+        .from('social-media')
+        .getPublicUrl(path)
+      return { url: publicUrl, path }
+    },
+  })
+}
+
+export function useDeleteMedia() {
+  return useMutation({
+    mutationFn: async (path) => {
+      const { error } = await supabase.storage.from('social-media').remove([path])
+      if (error) throw error
+    },
+  })
+}
+
 export function useCreatePost() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ clientId, platforms, content, status, scheduledAt, createdByName }) => {
+    mutationFn: async ({ clientId, platforms, content, status, scheduledAt, createdByName, mediaUrls, firstComment }) => {
       const { data, error } = await supabase
         .from('social_posts')
         .insert({
@@ -166,6 +192,8 @@ export function useCreatePost() {
           status,
           scheduled_at: scheduledAt ?? null,
           created_by_name: createdByName,
+          media_urls: mediaUrls ?? [],
+          first_comment: firstComment ?? null,
         })
         .select()
         .single()
