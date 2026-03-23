@@ -1,0 +1,17 @@
+name: Publish Scheduled Posts
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'   # every 5 minutes (free on GitHub)
+  workflow_dispatch:          # allow manual trigger from GitHub Actions tab
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger cron-publish endpoint
+        run: |
+          curl -s -X GET \
+            -H "x-internal-key: ${{ secrets.INTERNAL_API_KEY }}" \
+            "https://wom-internal.vercel.app/api/cron-publish" \
+            | jq .
