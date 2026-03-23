@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
   Image, Video, Smile, Hash, Link2, Calendar as CalIcon,
@@ -140,6 +140,70 @@ function PostPreview({ content, platform, client, mediaItems }) {
   )
 }
 
+// ─── Emoji picker ─────────────────────────────────────────────────────────────
+
+const EMOJI_CATEGORIES = [
+  { label: 'Smileys',  emojis: ['😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🥰','😍','🤩','😘','😎','🤔','🙄','😏','😌','🥳','🤗','😉','😋','😛','🥲','😤','😢','😭','😱','🤯','🤠','😴'] },
+  { label: 'Hearts',   emojis: ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝','🔥','✨','💫','🌟','⭐','💥','🎉','🎊','🎈','🏆','🥇','🎯','🚀','💯'] },
+  { label: 'Hands',    emojis: ['👋','✌️','🤞','👍','👎','👏','🙌','🤝','🙏','💪','👊','✊','🤜','🤛','👌','🤌','🫶','🫂','💅','🤳','☝️','👆','👇','👈','👉','🖐️','✋','🤚','🤙','🤘'] },
+  { label: 'Nature',   emojis: ['🌸','🌺','🌻','🌹','🌷','🌱','🌿','🍀','🌴','🌵','🌊','💧','⚡','❄️','🌈','☀️','🌙','🌍','🐶','🐱','🦋','🐝','🦄','🐬','🌮','🍕','🍔','☕','🧋','🍷'] },
+  { label: 'Business', emojis: ['📱','💻','📸','🎬','🎵','🎤','📢','📣','📝','✏️','📌','📍','🔖','🏷️','💡','🔑','💎','👑','💰','💳','🛍️','🎁','📦','🔔','📊','📈','📉','🗓️','⏰','🏢','🌐','📧'] },
+]
+
+function EmojiPicker({ onSelect, onClose }) {
+  const [activeCategory, setActiveCategory] = useState(0)
+  const ref = useRef(null)
+
+  // Close on outside click
+  useCallback(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose() }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [onClose])
+
+  return (
+    <div
+      ref={ref}
+      className="absolute bottom-full left-0 mb-2 bg-white border border-[#EDE8DC] rounded-xl shadow-xl z-50 w-72"
+      onMouseDown={e => e.preventDefault()} // prevent textarea blur
+    >
+      {/* Category tabs */}
+      <div className="flex border-b border-[#EDE8DC] px-1 pt-1">
+        {EMOJI_CATEGORIES.map((cat, i) => (
+          <button
+            key={cat.label}
+            onClick={() => setActiveCategory(i)}
+            className={cn(
+              'flex-1 py-1.5 text-xs font-medium rounded-t-lg transition-colors',
+              activeCategory === i
+                ? 'bg-[#FEF8EC] text-wom-gold border-b-2 border-wom-gold'
+                : 'text-[#092137]/40 hover:text-[#092137]/70'
+            )}
+          >
+            {EMOJI_CATEGORIES[i].emojis[0]}
+          </button>
+        ))}
+      </div>
+      {/* Label */}
+      <div className="px-3 py-1.5 text-xs font-semibold text-[#092137]/40 uppercase tracking-wider border-b border-[#EDE8DC]">
+        {EMOJI_CATEGORIES[activeCategory].label}
+      </div>
+      {/* Emoji grid */}
+      <div className="p-2 grid grid-cols-8 gap-0.5 max-h-44 overflow-y-auto">
+        {EMOJI_CATEGORIES[activeCategory].emojis.map((emoji, i) => (
+          <button
+            key={i}
+            onClick={() => onSelect(emoji)}
+            className="w-8 h-8 flex items-center justify-center text-lg hover:bg-[#F5F1E9] rounded-lg transition-colors"
+          >
+            {emoji}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ─── Drop zone ────────────────────────────────────────────────────────────────
 
 function DropZone({ onFiles, disabled }) {
@@ -223,6 +287,21 @@ export default function Compose() {
   )
   const [previewPlatform, setPreviewPlatform]     = useState(editPost?.platforms?.[0] ?? null)
   const [step, setStep]                           = useState(isEditing ? 2 : 1)
+  const [showEmojiPicker, setShowEmojiPicker]     = useState(false)
+
+  const textareaRef = useRef(null)
+
+  const insertAtCursor = (text) => {
+    const el = textareaRef.current
+    if (!el) { setContent(c => c + text); return }
+    const start = el.selectionStart
+    const end   = el.selectionEnd
+    setContent(c => c.slice(0, start) + text + c.slice(end))
+    requestAnimationFrame(() => {
+      el.focus()
+      el.setSelectionRange(start + text.length, start + text.length)
+    })
+  }
 
   // mediaItems: [{ file, preview, url, path, uploading }]
   const [mediaItems, setMediaItems] = useState(
@@ -301,20 +380,36 @@ export default function Compose() {
       const mediaUrls = mediaItems.filter(m => m.url).map(m => m.url)
       const fc        = showFirstComment && firstComment.trim() ? firstComment.trim() : null
 
-      // For "Publish Now" — save first, then trigger the publish API
+      // For "Publish Now"
       if (scheduleType === 'now') {
-        const post = await createPost.mutateAsync({
-          clientId:      selectedClientId,
-          platforms:     selectedPlatforms,
-          content,
-          status:        'publishing',
-          scheduledAt:   null,
-          createdByName: profile?.full_name ?? user?.email ?? 'Unknown',
-          mediaUrls,
-          firstComment:  fc,
-        })
+        let postId
+        if (isEditing) {
+          // Update the existing post first, then publish it
+          await updatePost.mutateAsync({
+            id:            editPost.id,
+            platforms:     selectedPlatforms,
+            content,
+            status:        'publishing',
+            scheduled_at:  null,
+            media_urls:    mediaUrls,
+            first_comment: fc,
+          })
+          postId = editPost.id
+        } else {
+          const post = await createPost.mutateAsync({
+            clientId:      selectedClientId,
+            platforms:     selectedPlatforms,
+            content,
+            status:        'publishing',
+            scheduledAt:   null,
+            createdByName: profile?.full_name ?? user?.email ?? 'Unknown',
+            mediaUrls,
+            firstComment:  fc,
+          })
+          postId = post.id
+        }
         toast.loading('Publishing to platforms...')
-        const result = await publishNow.mutateAsync(post.id)
+        const result = await publishNow.mutateAsync(postId)
         toast.dismiss()
         const allFailed = Object.values(result.platformResults ?? {}).every(r => r.error)
         if (allFailed) {
@@ -486,6 +581,7 @@ export default function Compose() {
               {/* Caption textarea */}
               <div className="relative">
                 <textarea
+                  ref={textareaRef}
                   value={content}
                   onChange={e => setContent(e.target.value)}
                   placeholder="Write your caption here... Use # for hashtags, @ to mention accounts"
@@ -505,6 +601,56 @@ export default function Compose() {
                 )
                 return null
               })}
+
+              {/* Toolbar */}
+              <div className="flex items-center gap-1 relative">
+                {/* Emoji picker */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowEmojiPicker(v => !v)}
+                    className={cn(
+                      'w-8 h-8 rounded-lg flex items-center justify-center transition-colors',
+                      showEmojiPicker ? 'bg-[#FEF8EC] text-wom-gold' : 'hover:bg-[#EDE8DC] text-[#092137]/40 hover:text-[#092137]/60'
+                    )}
+                    title="Insert emoji"
+                  >
+                    <Smile size={16} />
+                  </button>
+                  {showEmojiPicker && (
+                    <EmojiPicker
+                      onSelect={(emoji) => { insertAtCursor(emoji); setShowEmojiPicker(false) }}
+                      onClose={() => setShowEmojiPicker(false)}
+                    />
+                  )}
+                </div>
+                {/* Hashtag helper */}
+                <button
+                  type="button"
+                  onClick={() => insertAtCursor(' #')}
+                  className="w-8 h-8 rounded-lg hover:bg-[#EDE8DC] flex items-center justify-center text-[#092137]/40 hover:text-[#092137]/60 transition-colors"
+                  title="Add hashtag"
+                >
+                  <Hash size={16} />
+                </button>
+                {/* @ mention helper */}
+                <button
+                  type="button"
+                  onClick={() => insertAtCursor(' @')}
+                  className="w-8 h-8 rounded-lg hover:bg-[#EDE8DC] flex items-center justify-center text-[#092137]/40 hover:text-[#092137]/60 transition-colors font-bold text-sm"
+                  title="Add mention"
+                >
+                  @
+                </button>
+                <button
+                  type="button"
+                  onClick={() => insertAtCursor('\n\n')}
+                  className="w-8 h-8 rounded-lg hover:bg-[#EDE8DC] flex items-center justify-center text-[#092137]/40 hover:text-[#092137]/60 transition-colors text-xs font-mono"
+                  title="Add line break"
+                >
+                  ↵
+                </button>
+              </div>
 
               {/* Media section */}
               <div className="space-y-3 pt-1 border-t border-[#EDE8DC]">
