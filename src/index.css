@@ -1,0 +1,130 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Google Fonts ─────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+@layer base {
+  :root {
+    /* WOM brand mapped to shadcn tokens */
+    --background:         40 30% 94%;   /* #F5F1E9 cream */
+    --foreground:         210 50% 12%;  /* #092137 navy */
+    --card:               0 0% 100%;
+    --card-foreground:    210 50% 12%;
+    --popover:            0 0% 100%;
+    --popover-foreground: 210 50% 12%;
+    --primary:            38 87% 56%;   /* #F0A629 gold */
+    --primary-foreground: 210 50% 12%;  /* navy text on gold */
+    --secondary:          40 25% 88%;   /* cream-dark */
+    --secondary-foreground:210 50% 12%;
+    --muted:              40 20% 90%;
+    --muted-foreground:   210 20% 40%;
+    --accent:             38 87% 56%;   /* gold */
+    --accent-foreground:  210 50% 12%;
+    --border:             40 20% 84%;
+    --input:              40 20% 84%;
+    --ring:               38 87% 56%;   /* gold focus ring */
+    --radius:             0.75rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+    box-sizing: border-box;
+  }
+
+  body {
+    /* Cream page background, navy text — matches WOM site */
+    background-color: #F5F1E9;
+    color: #092137;
+    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', 'DM Sans', sans-serif;
+    font-weight: 600;
+    line-height: 1.25;
+    color: #092137;
+  }
+}
+
+@layer components {
+
+  /* ── Scrollbar ──────────────────────────────────────────────── */
+  ::-webkit-scrollbar       { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #EDE8DC; border-radius: 9999px; }
+  ::-webkit-scrollbar-thumb:hover { background: #F0A629; }
+
+  /* ── WOM Pill Buttons ───────────────────────────────────────── */
+  /* Matches site: 2em border-radius, gold bg, navy text, navy border */
+  .btn-wom {
+    @apply inline-flex items-center gap-2 px-5 py-2.5 rounded-full font-medium text-sm transition-all duration-200;
+  }
+  .btn-primary {
+    /* Gold background, navy text, navy border — exact site style */
+    background-color: #F0A629;
+    color: #092137;
+    border: 2px solid #092137;
+    @apply btn-wom active:scale-95;
+  }
+  .btn-primary:hover {
+    background-color: #092137;
+    color: #F5F1E9;
+    border-color: #092137;
+  }
+  .btn-secondary {
+    background-color: transparent;
+    color: #092137;
+    border: 2px solid #F0A629;
+    @apply btn-wom active:scale-95;
+  }
+  .btn-secondary:hover {
+    background-color: #F0A629;
+    color: #092137;
+  }
+  .btn-ghost {
+    @apply btn-wom text-[#092137] hover:bg-[#EDE8DC] active:scale-95 border border-transparent;
+  }
+  .btn-danger {
+    @apply btn-wom bg-red-50 text-red-600 hover:bg-red-100 active:scale-95 border border-red-100;
+  }
+
+  /* ── Cards ──────────────────────────────────────────────────── */
+  .card-hover {
+    @apply transition-all duration-200 hover:shadow-md hover:-translate-y-0.5;
+  }
+  .stat-card {
+    /* White card on cream background */
+    @apply bg-white rounded-xl p-5 border border-[#EDE8DC] card-hover;
+  }
+
+  /* ── Status Pills ────────────────────────────────────────────── */
+  .status-scheduled { @apply bg-blue-50 text-blue-700 text-xs px-2.5 py-0.5 rounded-full font-medium; }
+  .status-published { @apply bg-green-50 text-green-700 text-xs px-2.5 py-0.5 rounded-full font-medium; }
+  .status-draft     { @apply bg-[#EDE8DC] text-[#092137]/60 text-xs px-2.5 py-0.5 rounded-full font-medium; }
+  .status-failed    { @apply bg-red-50 text-red-600 text-xs px-2.5 py-0.5 rounded-full font-medium; }
+
+  /* ── Platform icon backgrounds ───────────────────────────────── */
+  .platform-instagram { background: linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888); }
+  .platform-facebook  { background: #1877F2; }
+  .platform-tiktok    { background: #010101; }
+  .platform-linkedin  { background: #0A66C2; }
+  .platform-twitter   { background: #000000; }
+  .platform-pinterest { background: #E60023; }
+  .platform-youtube   { background: #FF0000; }
+  .platform-google    { background: #4285F4; }
+
+  /* ── Input focus ─────────────────────────────────────────────── */
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: #F0A629 !important;
+    box-shadow: 0 0 0 3px rgba(240, 166, 41, 0.15) !important;
+  }
+}
