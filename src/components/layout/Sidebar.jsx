@@ -36,20 +36,10 @@ export default function Sidebar({ collapsed, onToggle }) {
         )}
         style={{ borderBottom: '1px solid rgba(245,241,233,0.1)' }}
       >
-        <WOMLogoMark size={collapsed ? 32 : 34} />
-        {!collapsed && (
-          <div className="overflow-hidden">
-            <p
-              className="font-bold text-sm leading-tight"
-              style={{ fontFamily: "'Space Grotesk', sans-serif", color: '#F5F1E9' }}
-            >
-              WOM Social
-            </p>
-            <p className="text-[10px] leading-tight" style={{ color: 'rgba(245,241,233,0.45)' }}>
-              Word Of Mouth Agency
-            </p>
-          </div>
-        )}
+        {collapsed
+          ? <WOMLogoMark variant="icon"  height={32} white />
+          : <WOMLogoMark variant="full"  height={30} white />
+        }
       </div>
 
       {/* Nav */}

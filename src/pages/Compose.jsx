@@ -1,11 +1,11 @@
-import { useState, useRef, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useRef, useCallback, useEffect } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import {
   Image, Video, Smile, Hash, Link2, Calendar as CalIcon,
   Send, Save, Eye, Check, AlertCircle, Info, Loader2,
-  X, Upload, Plus, MessageSquare,
+  X, Upload, Plus, MessageSquare, Pencil,
 } from 'lucide-react'
-import { useClients, useSocialAccounts, useCreatePost, usePublishNow, useUploadMedia, useDeleteMedia } from '@/lib/hooks'
+import { useClients, useSocialAccounts, useCreatePost, useUpdatePost, usePublishNow, useUploadMedia, useDeleteMedia } from '@/lib/hooks'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useProfile } from '@/lib/hooks'
 import { PLATFORMS, cn } from '@/lib/utils'
@@ -200,26 +200,45 @@ function DropZone({ onFiles, disabled }) {
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function Compose() {
-  const navigate = useNavigate()
+  const navigate  = useNavigate()
+  const location  = useLocation()
+  const editPost  = location.state?.editPost ?? null
+  const isEditing = !!editPost
+
   const { user } = useAuth()
   const { data: profile } = useProfile(user?.id)
 
-  const [selectedClientId, setSelectedClientId]   = useState('')
-  const [selectedPlatforms, setSelectedPlatforms] = useState([])
-  const [content, setContent]                     = useState('')
-  const [firstComment, setFirstComment]           = useState('')
-  const [showFirstComment, setShowFirstComment]   = useState(false)
-  const [scheduleType, setScheduleType]           = useState('schedule')
-  const [scheduleDate, setScheduleDate]           = useState(format(addDays(new Date(), 1), "yyyy-MM-dd'T'HH:mm"))
-  const [previewPlatform, setPreviewPlatform]     = useState(null)
-  const [step, setStep]                           = useState(1)
+  const [selectedClientId, setSelectedClientId]   = useState(editPost?.client_id ?? '')
+  const [selectedPlatforms, setSelectedPlatforms] = useState(editPost?.platforms ?? [])
+  const [content, setContent]                     = useState(editPost?.content ?? '')
+  const [firstComment, setFirstComment]           = useState(editPost?.first_comment ?? '')
+  const [showFirstComment, setShowFirstComment]   = useState(!!editPost?.first_comment)
+  const [scheduleType, setScheduleType]           = useState(
+    editPost ? (editPost.scheduled_at ? 'schedule' : 'draft') : 'schedule'
+  )
+  const [scheduleDate, setScheduleDate]           = useState(
+    editPost?.scheduled_at
+      ? format(new Date(editPost.scheduled_at), "yyyy-MM-dd'T'HH:mm")
+      : format(addDays(new Date(), 1), "yyyy-MM-dd'T'HH:mm")
+  )
+  const [previewPlatform, setPreviewPlatform]     = useState(editPost?.platforms?.[0] ?? null)
+  const [step, setStep]                           = useState(isEditing ? 2 : 1)
 
   // mediaItems: [{ file, preview, url, path, uploading }]
-  const [mediaItems, setMediaItems] = useState([])
+  const [mediaItems, setMediaItems] = useState(
+    (editPost?.media_urls ?? []).map((url, i) => ({
+      id:        `existing-${i}`,
+      url,
+      preview:   url,
+      path:      null,
+      uploading: false,
+    }))
+  )
 
   const { data: clients, isLoading: clientsLoading } = useClients()
   const { data: accounts } = useSocialAccounts(selectedClientId || undefined)
   const createPost    = useCreatePost()
+  const updatePost    = useUpdatePost()
   const publishNow    = usePublishNow()
   const uploadMedia   = useUploadMedia()
   const deleteMedia   = useDeleteMedia()
@@ -312,18 +331,30 @@ export default function Compose() {
       const status      = scheduleType === 'draft' ? 'draft' : 'scheduled'
       const scheduledAt = scheduleType === 'schedule' ? new Date(scheduleDate).toISOString() : null
 
-      await createPost.mutateAsync({
-        clientId:      selectedClientId,
-        platforms:     selectedPlatforms,
-        content,
-        status,
-        scheduledAt,
-        createdByName: profile?.full_name ?? user?.email ?? 'Unknown',
-        mediaUrls,
-        firstComment:  fc,
-      })
-
-      toast.success(status === 'draft' ? 'Draft saved!' : 'Post scheduled!')
+      if (isEditing) {
+        await updatePost.mutateAsync({
+          id:           editPost.id,
+          platforms:    selectedPlatforms,
+          content,
+          status,
+          scheduled_at: scheduledAt,
+          media_urls:   mediaUrls,
+          first_comment: fc,
+        })
+        toast.success(status === 'draft' ? 'Draft updated!' : 'Post updated!')
+      } else {
+        await createPost.mutateAsync({
+          clientId:      selectedClientId,
+          platforms:     selectedPlatforms,
+          content,
+          status,
+          scheduledAt,
+          createdByName: profile?.full_name ?? user?.email ?? 'Unknown',
+          mediaUrls,
+          firstComment:  fc,
+        })
+        toast.success(status === 'draft' ? 'Draft saved!' : 'Post scheduled!')
+      }
       navigate('/calendar')
     } catch (err) {
       toast.error('Failed: ' + err.message)
@@ -332,6 +363,12 @@ export default function Compose() {
 
   return (
     <div className="max-w-6xl mx-auto">
+      {isEditing && (
+        <div className="flex items-center gap-2 mb-4 text-sm bg-[#FEF8EC] border border-wom-gold/30 rounded-xl px-4 py-2.5">
+          <Pencil size={14} className="text-wom-gold flex-shrink-0" />
+          <span className="text-[#092137]/70">Editing scheduled post — make your changes and click <strong>Update Post</strong>.</span>
+        </div>
+      )}
       {/* Step indicator */}
       <div className="flex items-center gap-2 mb-6">
         {['Select Client & Platforms', 'Write Content', 'Schedule & Publish'].map((label, idx) => {
@@ -617,7 +654,8 @@ export default function Compose() {
               <div className="flex gap-3">
                 <button onClick={() => setStep(2)} className="btn-secondary">← Back</button>
                 <button onClick={handleSubmit} disabled={createPost.isPending || publishNow.isPending || isUploading} className="btn-primary flex-1 justify-center">
-                  {(createPost.isPending || publishNow.isPending) ? <Loader2 size={15} className="animate-spin" /> :
+                  {(createPost.isPending || updatePost.isPending || publishNow.isPending) ? <Loader2 size={15} className="animate-spin" /> :
+                   isEditing                   ? <><Pencil size={15} />  Update Post</> :
                    scheduleType === 'now'      ? <><Send size={15} />    Publish Now</> :
                    scheduleType === 'schedule' ? <><CalIcon size={15} /> Schedule Post</> :
                                                  <><Save size={15} />    Save Draft</>}

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Plus, Clock, Loader2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, Clock, Loader2, Pencil } from 'lucide-react'
 import {
   format, startOfMonth, endOfMonth, startOfWeek, endOfWeek,
   eachDayOfInterval, isSameMonth, isSameDay, isToday,
@@ -43,6 +43,7 @@ function PostPill({ post, onClick }) {
 }
 
 function PostDetailModal({ post, onClose }) {
+  const navigate       = useNavigate()
   const deleteMutation = useDeletePost()
   if (!post) return null
   const clientName = post.clients?.client_name ?? '—'
@@ -58,6 +59,13 @@ function PostDetailModal({ post, onClose }) {
     }
   }
 
+  const handleEdit = () => {
+    onClose()
+    navigate('/compose', { state: { editPost: post } })
+  }
+
+  const canEdit = post.status === 'scheduled' || post.status === 'draft' || post.status === 'failed'
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
@@ -68,6 +76,7 @@ function PostDetailModal({ post, onClose }) {
             <span className={cn('text-xs px-2 py-0.5 rounded-full font-medium',
               post.status === 'scheduled' ? 'bg-blue-50 text-blue-700' :
               post.status === 'published' ? 'bg-green-50 text-green-700' :
+              post.status === 'failed'    ? 'bg-red-50 text-red-600' :
               'bg-[#EDE8DC] text-[#092137]/60'
             )}>{post.status}</span>
           </div>
@@ -78,12 +87,26 @@ function PostDetailModal({ post, onClose }) {
           {(post.platforms ?? []).map(p => <PlatformIcon key={p} platform={p} size={22} />)}
         </div>
 
-        <p className="text-sm text-[#092137]/80 mb-4 leading-relaxed">{post.content}</p>
+        <p className="text-sm text-[#092137]/80 mb-4 leading-relaxed whitespace-pre-wrap">{post.content}</p>
+
+        {post.media_urls?.length > 0 && (
+          <div className="flex gap-2 flex-wrap mb-4">
+            {post.media_urls.map((url, i) => (
+              <img key={i} src={url} alt="" className="w-16 h-16 rounded-lg object-cover border border-[#EDE8DC]" />
+            ))}
+          </div>
+        )}
 
         {post.scheduled_at && (
           <div className="flex items-center gap-2 text-sm text-[#092137]/50 bg-[#F5F1E9] rounded-lg px-3 py-2 mb-4">
             <Clock size={14} />
             {format(parseISO(post.scheduled_at), 'EEEE d MMMM yyyy · h:mm a')}
+          </div>
+        )}
+
+        {post.error_message && (
+          <div className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-4">
+            Error: {post.error_message}
           </div>
         )}
 
@@ -95,6 +118,11 @@ function PostDetailModal({ post, onClose }) {
           <button onClick={handleDelete} disabled={deleteMutation.isPending} className="btn-danger">
             {deleteMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : 'Delete'}
           </button>
+          {canEdit && (
+            <button onClick={handleEdit} className="btn-secondary flex items-center gap-1.5">
+              <Pencil size={14} /> Edit
+            </button>
+          )}
           <button onClick={onClose} className="btn-secondary flex-1">Close</button>
         </div>
       </div>

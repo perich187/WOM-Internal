@@ -39,16 +39,8 @@ export default function Login() {
           style={{ background: 'radial-gradient(circle, rgba(240,166,41,0.07) 0%, transparent 70%)', transform: 'translate(-30%, 30%)' }} />
 
         {/* Logo */}
-        <div className="flex items-center gap-3 relative z-10">
-          <WOMLogoMark size={40} />
-          <div>
-            <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, color: '#F5F1E9', fontSize: 16, lineHeight: 1.2 }}>
-              WOM Social
-            </p>
-            <p style={{ color: 'rgba(245,241,233,0.45)', fontSize: 11, lineHeight: 1.2 }}>
-              Word Of Mouth Agency
-            </p>
-          </div>
+        <div className="relative z-10">
+          <WOMLogoMark variant="full" height={36} white />
         </div>
 
         {/* Hero text */}
@@ -86,11 +78,8 @@ export default function Login() {
         style={{ borderLeft: '1px solid rgba(245,241,233,0.08)' }}
       >
         {/* Mobile-only logo */}
-        <div className="absolute top-8 left-1/2 -translate-x-1/2 flex items-center gap-2.5 lg:hidden">
-          <WOMLogoMark size={32} />
-          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, color: '#F5F1E9', fontSize: 15 }}>
-            WOM Social
-          </span>
+        <div className="absolute top-8 left-1/2 -translate-x-1/2 lg:hidden">
+          <WOMLogoMark variant="full" height={28} white />
         </div>
 
         <div className="w-full max-w-sm">

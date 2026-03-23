@@ -1,33 +1,23 @@
 /**
- * WOM branded logo mark — gold rounded square with bold "WOM" wordmark.
- * Use size prop to scale uniformly.
+ * WOM Logo component.
+ *
+ * variant="icon"  — circular icon only  (wom-icon.png)
+ * variant="full"  — icon + "WORD OF MOUTH" wordmark (wom-logo.png)
+ *
+ * white prop — applies CSS filter to flip the navy logo to white,
+ * for use on dark/navy backgrounds (e.g. the sidebar).
  */
-export default function WOMLogoMark({ size = 36, className = '' }) {
-  const radius = Math.round(size * 0.28)
-  const fontSize = Math.round(size * 0.3)
+export default function WOMLogoMark({ variant = 'icon', height = 36, white = false, className = '' }) {
+  const src   = variant === 'full' ? '/wom-logo.png' : '/wom-icon.png'
+  const style = white ? { filter: 'brightness(0) invert(1)', height } : { height }
 
   return (
-    <div
-      className={`flex-shrink-0 flex items-center justify-center select-none ${className}`}
-      style={{
-        width: size,
-        height: size,
-        borderRadius: radius,
-        backgroundColor: '#F0A629',
-      }}
-    >
-      <span
-        style={{
-          fontFamily: "'Space Grotesk', sans-serif",
-          fontWeight: 700,
-          fontSize: fontSize,
-          color: '#092137',
-          letterSpacing: '-0.5px',
-          lineHeight: 1,
-        }}
-      >
-        WOM
-      </span>
-    </div>
+    <img
+      src={src}
+      alt="Word of Mouth"
+      style={style}
+      className={`object-contain select-none flex-shrink-0 ${className}`}
+      draggable={false}
+    />
   )
 }
