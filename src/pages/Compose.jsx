@@ -228,7 +228,7 @@ export default function Compose() {
                 <h3 className="font-semibold text-[#092137]">Write Your Post</h3>
                 <div className="flex gap-1">
                   {selectedPlatforms.map(p => (
-                    <button key={p} onClick={() => setPreviewPlatform(p)} className={cn('rounded-lg p-1 transition-colors', previewPlatform === p ? 'bg-purple-100' : 'hover:bg-[#EDE8DC]')}>
+                    <button key={p} onClick={() => setPreviewPlatform(p)} className={cn('rounded-lg p-1 transition-colors', previewPlatform === p ? 'bg-[#FEF8EC]' : 'hover:bg-[#EDE8DC]')}>
                       <PlatformIcon platform={p} size={20} />
                     </button>
                   ))}
