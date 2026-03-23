@@ -1,12 +1,12 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Zap, Smartphone, Monitor, Info } from 'lucide-react'
+import { useDigitalClient } from '@/lib/digitalClient'
 
 const SAMPLE = {
-  url:     'wordofmouthagency.com.au',
   mobile:  { performance: 62, accessibility: 91, bestPractices: 87, seo: 94 },
   desktop: { performance: 88, accessibility: 91, bestPractices: 91, seo: 98 },
   vitals: [
-    { name: 'First Contentful Paint', mobile: '2.1s',  desktop: '0.8s',  status: 'moderate' },
+    { name: 'First Contentful Paint',  mobile: '2.1s',  desktop: '0.8s',  status: 'moderate' },
     { name: 'Largest Contentful Paint',mobile: '4.2s',  desktop: '1.4s',  status: 'poor' },
     { name: 'Total Blocking Time',     mobile: '380ms', desktop: '90ms',  status: 'moderate' },
     { name: 'Cumulative Layout Shift', mobile: '0.04',  desktop: '0.02',  status: 'good' },
@@ -29,15 +29,32 @@ function ScoreRing({ score, label }) {
 const VITAL_STATUS = { good: 'text-green-600 bg-green-50', moderate: 'text-amber-600 bg-amber-50', poor: 'text-red-600 bg-red-50' }
 
 export default function SiteSpeed() {
+  const { selectedClient } = useDigitalClient()
   const [url, setUrl] = useState('')
   const [device, setDevice] = useState('mobile')
   const scores = SAMPLE[device]
+
+  useEffect(() => {
+    if (selectedClient?.website) {
+      setUrl(selectedClient.website.startsWith('http') ? selectedClient.website : `https://${selectedClient.website}`)
+    } else {
+      setUrl('')
+    }
+  }, [selectedClient?.id])
+
+  const displayDomain = selectedClient?.website
+    ? selectedClient.website.replace(/^https?:\/\//, '').replace(/\/$/, '')
+    : 'wordofmouthagency.com.au'
 
   return (
     <div className="max-w-4xl mx-auto space-y-5">
       <div>
         <h1 className="text-xl font-bold text-[#092137]">Site Speed</h1>
-        <p className="text-sm text-[#092137]/50">Google PageSpeed Insights — Core Web Vitals analysis</p>
+        <p className="text-sm text-[#092137]/50">
+          {selectedClient
+            ? `Google PageSpeed Insights for ${selectedClient.client_name}`
+            : 'Google PageSpeed Insights — Core Web Vitals analysis'}
+        </p>
       </div>
 
       <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 flex items-start gap-2 text-sm text-blue-700">
@@ -49,7 +66,12 @@ export default function SiteSpeed() {
         <div className="flex gap-3">
           <div className="relative flex-1">
             <Zap size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#092137]/30" />
-            <input value={url} onChange={e => setUrl(e.target.value)} placeholder="Enter URL to test (e.g. https://example.com.au)" className="w-full pl-9 pr-4 py-2.5 text-sm border border-[#EDE8DC] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400" />
+            <input
+              value={url}
+              onChange={e => setUrl(e.target.value)}
+              placeholder="Enter URL to test (e.g. https://example.com.au)"
+              className="w-full pl-9 pr-4 py-2.5 text-sm border border-[#EDE8DC] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400"
+            />
           </div>
           <button className="px-5 py-2.5 bg-amber-500 text-white text-sm font-medium rounded-xl hover:bg-amber-600 transition-colors flex items-center gap-1.5">
             <Zap size={15} /> Analyse
@@ -60,7 +82,7 @@ export default function SiteSpeed() {
       {/* Scores */}
       <div className="bg-white rounded-xl border border-[#EDE8DC] p-5">
         <div className="flex items-center justify-between mb-5">
-          <p className="text-sm font-semibold text-[#092137]">{SAMPLE.url} — Sample Results</p>
+          <p className="text-sm font-semibold text-[#092137]">{displayDomain} — Sample Results</p>
           <div className="flex bg-[#EDE8DC] rounded-full p-0.5 gap-0.5">
             {[{id:'mobile', icon: Smartphone}, {id:'desktop', icon: Monitor}].map(({id, icon: Icon}) => (
               <button key={id} onClick={() => setDevice(id)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${device === id ? 'bg-white shadow-sm text-[#092137]' : 'text-[#092137]/50'}`}>
@@ -75,7 +97,6 @@ export default function SiteSpeed() {
           ))}
         </div>
 
-        {/* Core Web Vitals */}
         <p className="text-xs font-semibold text-[#092137]/40 uppercase tracking-wider mb-3">Core Web Vitals</p>
         <div className="space-y-2">
           {SAMPLE.vitals.map(v => (

@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ClipboardCheck, AlertTriangle, XCircle, CheckCircle2, Info, Globe } from 'lucide-react'
+import { useDigitalClient } from '@/lib/digitalClient'
 
 const AUDIT_CATEGORIES = [
   {
@@ -55,15 +56,26 @@ function ScoreCircle({ score }) {
 }
 
 export default function SiteAudit() {
+  const { selectedClient } = useDigitalClient()
   const [domain, setDomain] = useState('')
 
-  const totalIssues = AUDIT_CATEGORIES.reduce((s, c) => s + c.issues.filter(i => i.severity !== 'good').length, 0)
+  useEffect(() => {
+    if (selectedClient?.website) {
+      setDomain(selectedClient.website.replace(/^https?:\/\//, '').replace(/\/$/, ''))
+    } else {
+      setDomain('')
+    }
+  }, [selectedClient?.id])
 
   return (
     <div className="max-w-5xl mx-auto space-y-5">
       <div>
         <h1 className="text-xl font-bold text-[#092137]">Site Audit</h1>
-        <p className="text-sm text-[#092137]/50">Comprehensive SEO health check for any website</p>
+        <p className="text-sm text-[#092137]/50">
+          {selectedClient
+            ? `SEO health check for ${selectedClient.client_name}`
+            : 'Comprehensive SEO health check for any website'}
+        </p>
       </div>
 
       <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 flex items-start gap-2 text-sm text-blue-700">
@@ -75,7 +87,12 @@ export default function SiteAudit() {
         <div className="flex gap-3">
           <div className="relative flex-1">
             <Globe size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#092137]/30" />
-            <input value={domain} onChange={e => setDomain(e.target.value)} placeholder="Enter domain to audit (e.g. example.com.au)" className="w-full pl-9 pr-4 py-2.5 text-sm border border-[#EDE8DC] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400" />
+            <input
+              value={domain}
+              onChange={e => setDomain(e.target.value)}
+              placeholder="Enter domain to audit (e.g. example.com.au)"
+              className="w-full pl-9 pr-4 py-2.5 text-sm border border-[#EDE8DC] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400"
+            />
           </div>
           <button className="px-5 py-2.5 bg-red-500 text-white text-sm font-medium rounded-xl hover:bg-red-600 transition-colors flex items-center gap-1.5">
             <ClipboardCheck size={15} /> Audit

@@ -13,6 +13,7 @@ import Calendar from './pages/Calendar'
 import Compose from './pages/Compose'
 import Analytics from './pages/Analytics'
 import Settings from './pages/Settings'
+import DigitalLayout from './pages/digital/DigitalLayout'
 import DigitalHome from './pages/digital/DigitalHome'
 import KeywordResearch from './pages/digital/KeywordResearch'
 import RankTracking from './pages/digital/RankTracking'
@@ -55,12 +56,14 @@ export default function App() {
             <Route path="settings"      element={<Settings />} />
 
             {/* Digital workspace */}
-            <Route path="digital"                    element={<DigitalHome />} />
-            <Route path="digital/keywords"           element={<KeywordResearch />} />
-            <Route path="digital/rank-tracking"      element={<RankTracking />} />
-            <Route path="digital/ai-overview"        element={<AIOverview />} />
-            <Route path="digital/site-speed"         element={<SiteSpeed />} />
-            <Route path="digital/site-audit"         element={<SiteAudit />} />
+            <Route path="digital" element={<DigitalLayout />}>
+              <Route index                  element={<DigitalHome />} />
+              <Route path="keywords"        element={<KeywordResearch />} />
+              <Route path="rank-tracking"   element={<RankTracking />} />
+              <Route path="ai-overview"     element={<AIOverview />} />
+              <Route path="site-speed"      element={<SiteSpeed />} />
+              <Route path="site-audit"      element={<SiteAudit />} />
+            </Route>
 
             {/* Other workspaces — placeholders */}
             <Route path="web"       element={<WorkspacePlaceholder workspaceId="web" />} />

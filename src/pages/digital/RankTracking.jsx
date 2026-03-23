@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { TrendingUp, TrendingDown, Minus, Plus, Info } from 'lucide-react'
+import { useDigitalClient } from '@/lib/digitalClient'
 
 const SAMPLE_RANKINGS = [
-  { domain: 'wordofmouthagency.com.au', keyword: 'digital marketing agency perth', position: 3,  change: +2,  url: '/services' },
-  { domain: 'wordofmouthagency.com.au', keyword: 'social media agency perth',      position: 5,  change: -1,  url: '/social-media' },
-  { domain: 'wordofmouthagency.com.au', keyword: 'content marketing perth',        position: 8,  change: +5,  url: '/content' },
-  { domain: 'wordofmouthagency.com.au', keyword: 'brand strategy agency',          position: 12, change: 0,   url: '/branding' },
-  { domain: 'wordofmouthagency.com.au', keyword: 'seo agency perth',               position: 18, change: -3,  url: '/seo' },
+  { keyword: 'digital marketing agency perth', position: 3,  change: +2,  url: '/services' },
+  { keyword: 'social media agency perth',      position: 5,  change: -1,  url: '/social-media' },
+  { keyword: 'content marketing perth',        position: 8,  change: +5,  url: '/content' },
+  { keyword: 'brand strategy agency',          position: 12, change: 0,   url: '/branding' },
+  { keyword: 'seo agency perth',               position: 18, change: -3,  url: '/seo' },
 ]
 
 function PositionBadge({ position }) {
@@ -19,11 +20,26 @@ function PositionBadge({ position }) {
 }
 
 export default function RankTracking() {
+  const { selectedClient } = useDigitalClient()
+  const domain = selectedClient?.website
+    ? selectedClient.website.replace(/^https?:\/\//, '').replace(/\/$/, '')
+    : ''
+
+  const [keywordInput, setKeywordInput] = useState('')
+  const [domainInput, setDomainInput] = useState(domain)
+
+  // Sync domain input when client changes
+  useState(() => { setDomainInput(domain) })
+
   return (
     <div className="max-w-5xl mx-auto space-y-5">
       <div>
         <h1 className="text-xl font-bold text-[#092137]">Rank Tracking</h1>
-        <p className="text-sm text-[#092137]/50">Monitor client keyword positions in Google search results</p>
+        <p className="text-sm text-[#092137]/50">
+          {selectedClient
+            ? `Monitoring keyword rankings for ${selectedClient.client_name}`
+            : 'Monitor client keyword positions in Google search results'}
+        </p>
       </div>
 
       <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 flex items-start gap-2 text-sm text-blue-700">
@@ -34,8 +50,18 @@ export default function RankTracking() {
       {/* Add tracking */}
       <div className="bg-white rounded-xl border border-[#EDE8DC] p-5">
         <div className="flex gap-3">
-          <input placeholder="Domain (e.g. example.com.au)" className="flex-1 px-4 py-2.5 text-sm border border-[#EDE8DC] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400" />
-          <input placeholder="Keyword to track" className="flex-1 px-4 py-2.5 text-sm border border-[#EDE8DC] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400" />
+          <input
+            value={domainInput}
+            onChange={e => setDomainInput(e.target.value)}
+            placeholder="Domain (e.g. example.com.au)"
+            className="flex-1 px-4 py-2.5 text-sm border border-[#EDE8DC] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400"
+          />
+          <input
+            value={keywordInput}
+            onChange={e => setKeywordInput(e.target.value)}
+            placeholder="Keyword to track"
+            className="flex-1 px-4 py-2.5 text-sm border border-[#EDE8DC] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-400"
+          />
           <button className="px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-1.5">
             <Plus size={15} /> Track
           </button>
@@ -45,7 +71,9 @@ export default function RankTracking() {
       {/* Rankings table */}
       <div className="bg-white rounded-xl border border-[#EDE8DC] overflow-hidden">
         <div className="px-5 py-3.5 border-b border-[#EDE8DC]">
-          <p className="text-sm font-semibold text-[#092137]">Tracked Keywords</p>
+          <p className="text-sm font-semibold text-[#092137]">
+            {selectedClient ? `Tracked Keywords — ${selectedClient.client_name}` : 'Tracked Keywords'}
+          </p>
         </div>
         <div className="divide-y divide-gray-50">
           {SAMPLE_RANKINGS.map((row, i) => (
@@ -53,7 +81,11 @@ export default function RankTracking() {
               <PositionBadge position={row.position} />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-[#092137] truncate">{row.keyword}</p>
-                <p className="text-xs text-[#092137]/40 truncate">{row.domain}{row.url}</p>
+                <p className="text-xs text-[#092137]/40 truncate">
+                  {selectedClient?.website
+                    ? selectedClient.website.replace(/^https?:\/\//, '').replace(/\/$/, '')
+                    : 'wordofmouthagency.com.au'}{row.url}
+                </p>
               </div>
               <div className="flex items-center gap-1.5 text-xs font-medium">
                 {row.change > 0  && <><TrendingUp   size={14} className="text-green-500" /><span className="text-green-500">+{row.change}</span></>}

@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Search, TrendingUp, TrendingDown, Minus, Info } from 'lucide-react'
+import { useDigitalClient } from '@/lib/digitalClient'
 
 const SAMPLE_KEYWORDS = [
   { keyword: 'digital marketing agency',    volume: 18100, difficulty: 72, cpc: '$8.40',  trend: 'up' },
@@ -24,13 +25,28 @@ function DifficultyBar({ score }) {
 }
 
 export default function KeywordResearch() {
+  const { selectedClient } = useDigitalClient()
   const [query, setQuery] = useState('')
+
+  // Pre-fill with client domain when client changes
+  useEffect(() => {
+    if (selectedClient?.website) {
+      const domain = selectedClient.website.replace(/^https?:\/\//, '').replace(/\/$/, '')
+      setQuery(domain)
+    } else {
+      setQuery('')
+    }
+  }, [selectedClient?.id])
 
   return (
     <div className="max-w-5xl mx-auto space-y-5">
       <div>
         <h1 className="text-xl font-bold text-[#092137]">Keyword Research</h1>
-        <p className="text-sm text-[#092137]/50">Discover keyword opportunities for your clients</p>
+        <p className="text-sm text-[#092137]/50">
+          {selectedClient
+            ? `Keyword opportunities for ${selectedClient.client_name}`
+            : 'Discover keyword opportunities for your clients'}
+        </p>
       </div>
 
       <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 flex items-start gap-2 text-sm text-blue-700">
@@ -59,7 +75,9 @@ export default function KeywordResearch() {
       {/* Results table */}
       <div className="bg-white rounded-xl border border-[#EDE8DC] overflow-hidden">
         <div className="px-5 py-3.5 border-b border-[#EDE8DC] flex items-center justify-between">
-          <p className="text-sm font-semibold text-[#092137]">Sample Keywords</p>
+          <p className="text-sm font-semibold text-[#092137]">
+            {selectedClient ? `Sample Keywords — ${selectedClient.client_name}` : 'Sample Keywords'}
+          </p>
           <span className="text-xs text-[#092137]/40">{SAMPLE_KEYWORDS.length} results</span>
         </div>
         <table className="w-full">
