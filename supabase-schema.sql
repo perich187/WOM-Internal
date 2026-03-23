@@ -1,8 +1,59 @@
 -- ================================================================
--- WOM Social — Supabase Schema
+-- WOM Social — Full Standalone Schema
 -- Run this in your Supabase SQL Editor (supabase.com → SQL Editor)
--- This builds on top of the existing WOM Dashboard schema.
+-- This is self-contained — no dependency on the WOM Dashboard.
 -- ================================================================
+
+-- Enable UUID extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- ────────────────────────────────────────────────────────────────
+-- PROFILES
+-- Auto-created for each Supabase Auth user on sign-up
+-- ────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS profiles (
+  id         UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  full_name  TEXT,
+  email      TEXT,
+  role       TEXT DEFAULT 'staff' CHECK (role IN ('admin', 'manager', 'staff')),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Auto-create a profile row whenever a new user signs up
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, full_name, email)
+  VALUES (
+    NEW.id,
+    NEW.raw_user_meta_data->>'full_name',
+    NEW.email
+  )
+  ON CONFLICT (id) DO NOTHING;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- ────────────────────────────────────────────────────────────────
+-- CLIENTS
+-- Agency clients whose social media we manage
+-- ────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS clients (
+  id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  client_name  TEXT NOT NULL,
+  industry     TEXT,
+  website      TEXT,
+  notes        TEXT,
+  status       TEXT DEFAULT 'Active' CHECK (status IN ('Active', 'Inactive', 'Churned')),
+  color        TEXT DEFAULT '#F0A629',
+  created_at   TIMESTAMPTZ DEFAULT NOW(),
+  updated_at   TIMESTAMPTZ DEFAULT NOW()
+);
 
 -- ────────────────────────────────────────────────────────────────
 -- SOCIAL ACCOUNTS
@@ -18,12 +69,11 @@ CREATE TABLE IF NOT EXISTS social_accounts (
   username         TEXT,
   account_name     TEXT,
   followers        INTEGER DEFAULT 0,
-  -- Tokens stored here — in production use Vault or encrypt at app layer
   access_token     TEXT,
   refresh_token    TEXT,
   token_expires_at TIMESTAMPTZ,
   connected        BOOLEAN DEFAULT FALSE,
-  platform_user_id TEXT,   -- the platform's own user/page ID
+  platform_user_id TEXT,
   created_at       TIMESTAMPTZ DEFAULT NOW(),
   updated_at       TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE (client_id, platform)
@@ -36,7 +86,7 @@ CREATE TABLE IF NOT EXISTS social_accounts (
 CREATE TABLE IF NOT EXISTS social_posts (
   id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   client_id       UUID REFERENCES clients(id) ON DELETE CASCADE,
-  platforms       TEXT[] NOT NULL DEFAULT '{}',  -- ['instagram','facebook']
+  platforms       TEXT[] NOT NULL DEFAULT '{}',
   content         TEXT NOT NULL DEFAULT '',
   media_urls      TEXT[] DEFAULT '{}',
   status          TEXT DEFAULT 'draft' CHECK (
@@ -56,15 +106,15 @@ CREATE TABLE IF NOT EXISTS social_posts (
 -- One row per platform per post — populated after publishing
 -- ────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS social_post_analytics (
-  id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  post_id      UUID REFERENCES social_posts(id) ON DELETE CASCADE,
-  platform     TEXT NOT NULL,
-  likes        INTEGER DEFAULT 0,
-  comments     INTEGER DEFAULT 0,
-  shares       INTEGER DEFAULT 0,
-  reach        INTEGER DEFAULT 0,
-  impressions  INTEGER DEFAULT 0,
-  recorded_at  TIMESTAMPTZ DEFAULT NOW()
+  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  post_id     UUID REFERENCES social_posts(id) ON DELETE CASCADE,
+  platform    TEXT NOT NULL,
+  likes       INTEGER DEFAULT 0,
+  comments    INTEGER DEFAULT 0,
+  shares      INTEGER DEFAULT 0,
+  reach       INTEGER DEFAULT 0,
+  impressions INTEGER DEFAULT 0,
+  recorded_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- ────────────────────────────────────────────────────────────────
@@ -77,6 +127,11 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS set_clients_updated_at ON clients;
+CREATE TRIGGER set_clients_updated_at
+  BEFORE UPDATE ON clients
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
 DROP TRIGGER IF EXISTS set_social_accounts_updated_at ON social_accounts;
 CREATE TRIGGER set_social_accounts_updated_at
@@ -91,11 +146,23 @@ CREATE TRIGGER set_social_posts_updated_at
 -- ────────────────────────────────────────────────────────────────
 -- ROW LEVEL SECURITY
 -- ────────────────────────────────────────────────────────────────
-ALTER TABLE social_accounts        ENABLE ROW LEVEL SECURITY;
-ALTER TABLE social_posts           ENABLE ROW LEVEL SECURITY;
-ALTER TABLE social_post_analytics  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE profiles              ENABLE ROW LEVEL SECURITY;
+ALTER TABLE clients               ENABLE ROW LEVEL SECURITY;
+ALTER TABLE social_accounts       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE social_posts          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE social_post_analytics ENABLE ROW LEVEL SECURITY;
 
--- Authenticated staff can read and write all social data
+-- Authenticated staff can read and write everything
+CREATE POLICY "Auth read profiles"
+  ON profiles FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Auth write profiles"
+  ON profiles FOR ALL USING (auth.role() = 'authenticated');
+
+CREATE POLICY "Auth read clients"
+  ON clients FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Auth write clients"
+  ON clients FOR ALL USING (auth.role() = 'authenticated');
+
 CREATE POLICY "Auth read social_accounts"
   ON social_accounts FOR SELECT USING (auth.role() = 'authenticated');
 CREATE POLICY "Auth write social_accounts"
@@ -112,7 +179,7 @@ CREATE POLICY "Auth write social_post_analytics"
   ON social_post_analytics FOR ALL USING (auth.role() = 'authenticated');
 
 -- ────────────────────────────────────────────────────────────────
--- STORAGE BUCKET for social media uploads
+-- STORAGE BUCKET for social media image/video uploads
 -- ────────────────────────────────────────────────────────────────
 INSERT INTO storage.buckets (id, name, public)
   VALUES ('social-media', 'social-media', true)
@@ -132,6 +199,6 @@ CREATE POLICY "Auth delete social-media"
 
 -- ================================================================
 -- Done! Next steps:
---   1. This schema is already applied via the SQL Editor
---   2. The app will use the same credentials as WOM Dashboard
+--   1. Go to Authentication → Users → Add user to create your login
+--   2. Start adding clients from the app
 -- ================================================================
