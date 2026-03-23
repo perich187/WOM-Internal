@@ -14,8 +14,8 @@ function AddClientModal({ onClose }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-fade-in">
-        <h2 className="text-lg font-bold text-gray-900 mb-5">Add New Client</h2>
-        <p className="text-sm text-gray-500 mb-5">
+        <h2 className="text-lg font-bold text-[#092137] mb-5">Add New Client</h2>
+        <p className="text-sm text-[#092137]/50 mb-5">
           Clients are managed in the WOM Dashboard. New clients added there will appear here automatically.
         </p>
         <div className="flex gap-3">
@@ -77,13 +77,13 @@ export default function Clients() {
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 flex-wrap">
         <div className="relative flex-1">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#092137]/40" />
           <input
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search clients..."
-            className="pl-9 pr-4 py-2.5 text-sm bg-white border border-gray-200 rounded-full w-full max-w-xs focus:outline-none focus:ring-2 focus:ring-wom-gold/30 focus:border-wom-gold"
+            className="pl-9 pr-4 py-2.5 text-sm bg-white border border-[#EDE8DC] rounded-full w-full max-w-xs focus:outline-none focus:ring-2 focus:ring-wom-gold/30 focus:border-wom-gold"
           />
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -93,7 +93,7 @@ export default function Clients() {
               onClick={() => setFilter(ind)}
               className={cn(
                 'px-3.5 py-1.5 rounded-full text-xs font-medium transition-colors',
-                filter === ind ? 'bg-wom-gold text-[#092137]' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                filter === ind ? 'bg-wom-gold text-[#092137]' : 'bg-[#EDE8DC] text-[#092137]/60 hover:bg-gray-200'
               )}
             >
               {ind}
@@ -112,13 +112,13 @@ export default function Clients() {
           { label: 'Active', value: clients?.filter(c => c.status === 'Active').length ?? '—', icon: Building2 },
           { label: 'Connected Accounts', value: accounts?.filter(a => a.connected).length ?? '—', icon: Link2 },
         ].map(({ label, value, icon: Icon }) => (
-          <div key={label} className="bg-white rounded-xl border border-gray-100 p-4 flex items-center gap-3">
+          <div key={label} className="bg-white rounded-xl border border-[#EDE8DC] p-4 flex items-center gap-3">
             <div className="w-9 h-9 bg-[#FEF8EC] rounded-xl flex items-center justify-center">
               <Icon size={18} className="text-wom-gold" />
             </div>
             <div>
-              <p className="text-xl font-bold text-gray-900">{isLoading ? '—' : value}</p>
-              <p className="text-xs text-gray-500">{label}</p>
+              <p className="text-xl font-bold text-[#092137]">{isLoading ? '—' : value}</p>
+              <p className="text-xs text-[#092137]/50">{label}</p>
             </div>
           </div>
         ))}
@@ -126,11 +126,11 @@ export default function Clients() {
 
       {/* Grid */}
       {isLoading ? (
-        <div className="flex items-center justify-center py-20 text-gray-400 gap-2">
+        <div className="flex items-center justify-center py-20 text-[#092137]/40 gap-2">
           <Loader2 size={20} className="animate-spin" /> Loading clients...
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-16 text-gray-400">
+        <div className="text-center py-16 text-[#092137]/40">
           <Building2 size={36} className="mx-auto mb-3 opacity-30" />
           <p>{clients?.length ? 'No clients match your search.' : 'No clients yet — add them in the WOM Dashboard.'}</p>
         </div>
@@ -140,7 +140,7 @@ export default function Clients() {
             const color = clientColor(client.client_name)
             const stats = clientStats[client.id] ?? { accounts: 0, scheduled: 0 }
             return (
-              <div key={client.id} className="bg-white rounded-xl border border-gray-100 p-5 card-hover">
+              <div key={client.id} className="bg-white rounded-xl border border-[#EDE8DC] p-5 card-hover">
                 <div className="flex items-start gap-3 mb-4">
                   <div
                     className="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold text-base flex-shrink-0"
@@ -149,25 +149,25 @@ export default function Clients() {
                     {client.client_name?.charAt(0) ?? '?'}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-900 truncate">{client.client_name}</h3>
-                    <p className="text-xs text-gray-400">{client.industry ?? '—'}</p>
+                    <h3 className="font-semibold text-[#092137] truncate">{client.client_name}</h3>
+                    <p className="text-xs text-[#092137]/40">{client.industry ?? '—'}</p>
                   </div>
                   <span className={cn(
                     'text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0',
-                    client.status === 'Active' ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-500'
+                    client.status === 'Active' ? 'bg-green-50 text-green-600' : 'bg-[#EDE8DC] text-[#092137]/50'
                   )}>
                     {client.status}
                   </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 mb-4">
-                  <div className="bg-gray-50 rounded-lg p-3 text-center">
-                    <p className="text-lg font-bold text-gray-900">{stats.accounts}</p>
-                    <p className="text-xs text-gray-500">Connected</p>
+                  <div className="bg-[#F5F1E9] rounded-lg p-3 text-center">
+                    <p className="text-lg font-bold text-[#092137]">{stats.accounts}</p>
+                    <p className="text-xs text-[#092137]/50">Connected</p>
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-3 text-center">
-                    <p className="text-lg font-bold text-gray-900">{stats.scheduled}</p>
-                    <p className="text-xs text-gray-500">Scheduled</p>
+                  <div className="bg-[#F5F1E9] rounded-lg p-3 text-center">
+                    <p className="text-lg font-bold text-[#092137]">{stats.scheduled}</p>
+                    <p className="text-xs text-[#092137]/50">Scheduled</p>
                   </div>
                 </div>
 

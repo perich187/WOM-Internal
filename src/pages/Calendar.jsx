@@ -29,7 +29,7 @@ function PostPill({ post, onClick }) {
         'w-full text-left text-xs px-2 py-1 rounded-md flex items-center gap-1.5 truncate transition-colors',
         post.status === 'scheduled' ? 'bg-blue-50 text-blue-700 hover:bg-blue-100' :
         post.status === 'published' ? 'bg-green-50 text-green-700 hover:bg-green-100' :
-        post.status === 'draft' ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' :
+        post.status === 'draft' ? 'bg-[#EDE8DC] text-[#092137]/60 hover:bg-gray-200' :
         'bg-red-50 text-red-600 hover:bg-red-100'
       )}
     >
@@ -64,31 +64,31 @@ function PostDetailModal({ post, onClose }) {
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-fade-in">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-2.5 py-0.5 rounded-full">{clientName}</span>
+            <span className="text-xs font-semibold text-[#092137]/50 bg-[#EDE8DC] px-2.5 py-0.5 rounded-full">{clientName}</span>
             <span className={cn('text-xs px-2 py-0.5 rounded-full font-medium',
               post.status === 'scheduled' ? 'bg-blue-50 text-blue-700' :
               post.status === 'published' ? 'bg-green-50 text-green-700' :
-              'bg-gray-100 text-gray-600'
+              'bg-[#EDE8DC] text-[#092137]/60'
             )}>{post.status}</span>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none ml-2">×</button>
+          <button onClick={onClose} className="text-[#092137]/40 hover:text-[#092137]/60 text-xl leading-none ml-2">×</button>
         </div>
 
         <div className="flex items-center gap-2 mb-3">
           {(post.platforms ?? []).map(p => <PlatformIcon key={p} platform={p} size={22} />)}
         </div>
 
-        <p className="text-sm text-gray-700 mb-4 leading-relaxed">{post.content}</p>
+        <p className="text-sm text-[#092137]/80 mb-4 leading-relaxed">{post.content}</p>
 
         {post.scheduled_at && (
-          <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-50 rounded-lg px-3 py-2 mb-4">
+          <div className="flex items-center gap-2 text-sm text-[#092137]/50 bg-[#F5F1E9] rounded-lg px-3 py-2 mb-4">
             <Clock size={14} />
             {format(parseISO(post.scheduled_at), 'EEEE d MMMM yyyy · h:mm a')}
           </div>
         )}
 
         {post.created_by_name && (
-          <p className="text-xs text-gray-400 mb-4">Created by {post.created_by_name}</p>
+          <p className="text-xs text-[#092137]/40 mb-4">Created by {post.created_by_name}</p>
         )}
 
         <div className="flex gap-3">
@@ -111,10 +111,10 @@ function MonthView({ currentDate, posts, onPostClick, onAddClick }) {
   const WEEK_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-      <div className="grid grid-cols-7 border-b border-gray-100">
+    <div className="bg-white rounded-xl border border-[#EDE8DC] overflow-hidden">
+      <div className="grid grid-cols-7 border-b border-[#EDE8DC]">
         {WEEK_DAYS.map(d => (
-          <div key={d} className="py-2.5 text-center text-xs font-semibold text-gray-400 uppercase tracking-wider">{d}</div>
+          <div key={d} className="py-2.5 text-center text-xs font-semibold text-[#092137]/40 uppercase tracking-wider">{d}</div>
         ))}
       </div>
       <div className="grid grid-cols-7">
@@ -126,14 +126,14 @@ function MonthView({ currentDate, posts, onPostClick, onAddClick }) {
               key={idx}
               className={cn(
                 'min-h-[100px] p-2 border-b border-r border-gray-50 relative group',
-                !isCurrentMonth && 'bg-gray-50/50',
+                !isCurrentMonth && 'bg-[#F5F1E9]/50',
                 isToday(day) && 'bg-[#FEF8EC]/60'
               )}
             >
               <div className="flex items-center justify-between mb-1">
                 <span className={cn(
                   'w-6 h-6 flex items-center justify-center text-xs rounded-full font-medium',
-                  isToday(day) ? 'bg-wom-gold text-[#092137]' : isCurrentMonth ? 'text-gray-700' : 'text-gray-300'
+                  isToday(day) ? 'bg-wom-gold text-[#092137]' : isCurrentMonth ? 'text-[#092137]/80' : 'text-gray-300'
                 )}>
                   {format(day, 'd')}
                 </span>
@@ -149,7 +149,7 @@ function MonthView({ currentDate, posts, onPostClick, onAddClick }) {
                   <PostPill key={post.id} post={post} onClick={onPostClick} />
                 ))}
                 {dayPosts.length > 3 && (
-                  <button className="w-full text-center text-xs text-gray-400 hover:text-wom-gold">
+                  <button className="w-full text-center text-xs text-[#092137]/40 hover:text-wom-gold">
                     +{dayPosts.length - 3} more
                   </button>
                 )}
@@ -166,34 +166,34 @@ function ListView({ posts, onPostClick }) {
   const sorted = [...posts].filter(p => p.scheduled_at).sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
   if (sorted.length === 0) {
     return (
-      <div className="bg-white rounded-xl border border-gray-100 p-12 text-center text-gray-400">
+      <div className="bg-white rounded-xl border border-[#EDE8DC] p-12 text-center text-[#092137]/40">
         <Clock size={36} className="mx-auto mb-3 opacity-30" />
         <p>No scheduled posts.</p>
       </div>
     )
   }
   return (
-    <div className="bg-white rounded-xl border border-gray-100 divide-y divide-gray-50">
+    <div className="bg-white rounded-xl border border-[#EDE8DC] divide-y divide-gray-50">
       {sorted.map(post => {
         const clientName = post.clients?.client_name ?? '—'
         return (
-          <div key={post.id} onClick={() => onPostClick(post)} className="flex items-start gap-4 p-4 hover:bg-gray-50 cursor-pointer transition-colors">
+          <div key={post.id} onClick={() => onPostClick(post)} className="flex items-start gap-4 p-4 hover:bg-[#F5F1E9] cursor-pointer transition-colors">
             <div className="text-center flex-shrink-0 w-14">
               <p className="text-xs font-bold text-wom-gold">{format(parseISO(post.scheduled_at), 'MMM').toUpperCase()}</p>
-              <p className="text-2xl font-bold text-gray-900 leading-none">{format(parseISO(post.scheduled_at), 'd')}</p>
-              <p className="text-xs text-gray-400">{format(parseISO(post.scheduled_at), 'h:mm a')}</p>
+              <p className="text-2xl font-bold text-[#092137] leading-none">{format(parseISO(post.scheduled_at), 'd')}</p>
+              <p className="text-xs text-[#092137]/40">{format(parseISO(post.scheduled_at), 'h:mm a')}</p>
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap mb-1">
-                <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{clientName}</span>
+                <span className="text-xs font-medium text-[#092137]/50 bg-[#EDE8DC] px-2 py-0.5 rounded-full">{clientName}</span>
                 <span className={cn('text-xs px-2 py-0.5 rounded-full font-medium',
                   post.status === 'scheduled' ? 'bg-blue-50 text-blue-700' :
-                  post.status === 'published' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'
+                  post.status === 'published' ? 'bg-green-50 text-green-700' : 'bg-[#EDE8DC] text-[#092137]/60'
                 )}>{post.status}</span>
                 <div className="flex gap-1 ml-auto">{(post.platforms ?? []).map(p => <PlatformIcon key={p} platform={p} size={16} />)}</div>
               </div>
-              <p className="text-sm text-gray-700 line-clamp-2">{post.content}</p>
-              {post.created_by_name && <p className="text-xs text-gray-400 mt-1">By {post.created_by_name}</p>}
+              <p className="text-sm text-[#092137]/80 line-clamp-2">{post.content}</p>
+              {post.created_by_name && <p className="text-xs text-[#092137]/40 mt-1">By {post.created_by_name}</p>}
             </div>
           </div>
         )
@@ -220,11 +220,11 @@ export default function Calendar() {
       {/* Controls */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 flex-wrap">
         <div className="flex items-center gap-2">
-          <button onClick={() => setCurrentDate(d => subMonths(d, 1))} className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-50">
+          <button onClick={() => setCurrentDate(d => subMonths(d, 1))} className="w-8 h-8 rounded-lg bg-white border border-[#EDE8DC] flex items-center justify-center hover:bg-[#F5F1E9]">
             <ChevronLeft size={16} />
           </button>
-          <h2 className="text-base font-semibold text-gray-900 w-40 text-center">{format(currentDate, 'MMMM yyyy')}</h2>
-          <button onClick={() => setCurrentDate(d => addMonths(d, 1))} className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-50">
+          <h2 className="text-base font-semibold text-[#092137] w-40 text-center">{format(currentDate, 'MMMM yyyy')}</h2>
+          <button onClick={() => setCurrentDate(d => addMonths(d, 1))} className="w-8 h-8 rounded-lg bg-white border border-[#EDE8DC] flex items-center justify-center hover:bg-[#F5F1E9]">
             <ChevronRight size={16} />
           </button>
           <button onClick={() => setCurrentDate(new Date())} className="text-xs text-wom-gold border border-wom-gold/30 px-3 py-1.5 rounded-full hover:bg-[#FEF8EC] transition-colors">
@@ -236,20 +236,20 @@ export default function Calendar() {
           <select
             value={filterClient}
             onChange={e => setFilterClient(e.target.value)}
-            className="text-sm border border-gray-200 rounded-full px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-wom-gold/30"
+            className="text-sm border border-[#EDE8DC] rounded-full px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-wom-gold/30"
           >
             <option value="all">All Clients</option>
             {(clients ?? []).map(c => <option key={c.id} value={c.id}>{c.client_name}</option>)}
           </select>
 
-          <div className="flex bg-gray-100 rounded-full p-0.5 gap-0.5">
+          <div className="flex bg-[#EDE8DC] rounded-full p-0.5 gap-0.5">
             {VIEW_OPTIONS.map(v => (
               <button
                 key={v}
                 onClick={() => setView(v)}
                 className={cn(
                   'px-3.5 py-1.5 rounded-full text-xs font-medium capitalize transition-all',
-                  view === v ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                  view === v ? 'bg-white text-[#092137] shadow-sm' : 'text-[#092137]/50 hover:text-[#092137]/80'
                 )}
               >
                 {v}
@@ -264,14 +264,14 @@ export default function Calendar() {
       </div>
 
       {/* Legend */}
-      <div className="flex items-center gap-4 text-xs text-gray-500">
+      <div className="flex items-center gap-4 text-xs text-[#092137]/50">
         {[{ label: 'Scheduled', cls: 'bg-wom-cyan' }, { label: 'Published', cls: 'bg-wom-teal' }, { label: 'Draft', cls: 'bg-gray-400' }, { label: 'Failed', cls: 'bg-wom-red' }].map(({ label, cls }) => (
           <span key={label} className="flex items-center gap-1.5"><span className={cn('w-2 h-2 rounded-full', cls)} />{label}</span>
         ))}
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-20 text-gray-400 gap-2">
+        <div className="flex items-center justify-center py-20 text-[#092137]/40 gap-2">
           <Loader2 size={20} className="animate-spin" /> Loading posts...
         </div>
       ) : view === 'month' ? (

@@ -28,23 +28,23 @@ function OAuthInfoModal({ platform, onClose }) {
         <div className="flex items-center gap-3 mb-4">
           <PlatformIcon platform={platform} size={32} />
           <div>
-            <h2 className="font-bold text-gray-900">{p?.label} OAuth</h2>
-            <p className="text-xs text-gray-400">How the connection works</p>
+            <h2 className="font-bold text-[#092137]">{p?.label} OAuth</h2>
+            <p className="text-xs text-[#092137]/40">How the connection works</p>
           </div>
         </div>
-        <p className="text-sm text-gray-600 mb-4">{info.description}</p>
-        <div className="bg-gray-50 rounded-xl p-4 mb-4">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Required Permissions</p>
+        <p className="text-sm text-[#092137]/60 mb-4">{info.description}</p>
+        <div className="bg-[#F5F1E9] rounded-xl p-4 mb-4">
+          <p className="text-xs font-semibold text-[#092137]/50 uppercase tracking-wider mb-2">Required Permissions</p>
           <ul className="space-y-1">
             {info.scopes.map(scope => (
-              <li key={scope} className="flex items-center gap-2 text-xs text-gray-600">
+              <li key={scope} className="flex items-center gap-2 text-xs text-[#092137]/60">
                 <CheckCircle2 size={12} className="text-wom-teal" />
-                <code className="bg-white px-1.5 py-0.5 rounded border border-gray-200">{scope}</code>
+                <code className="bg-white px-1.5 py-0.5 rounded border border-[#EDE8DC]">{scope}</code>
               </li>
             ))}
           </ul>
         </div>
-        <div className="flex items-center gap-1 text-xs text-gray-400 mb-5">
+        <div className="flex items-center gap-1 text-xs text-[#092137]/40 mb-5">
           <Lock size={11} /> Tokens are stored securely in Supabase and never exposed to the browser.
         </div>
         <div className="flex gap-3">
@@ -73,35 +73,35 @@ function AccountRow({ account, onDisconnect }) {
   return (
     <div className={cn(
       'flex items-center gap-4 p-4 rounded-xl border transition-colors',
-      account.connected ? 'border-gray-100 bg-white hover:border-wom-gold/20' : 'border-dashed border-gray-200 bg-gray-50/50'
+      account.connected ? 'border-[#EDE8DC] bg-white hover:border-wom-gold/20' : 'border-dashed border-[#EDE8DC] bg-[#F5F1E9]/50'
     )}>
       <PlatformIcon platform={account.platform} size={36} />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <p className="font-medium text-gray-800 text-sm">{platform?.label ?? account.platform}</p>
+          <p className="font-medium text-[#092137] text-sm">{platform?.label ?? account.platform}</p>
           {account.connected ? (
             <span className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
               <CheckCircle2 size={11} /> Connected
             </span>
           ) : (
-            <span className="flex items-center gap-1 text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+            <span className="flex items-center gap-1 text-xs text-[#092137]/40 bg-[#EDE8DC] px-2 py-0.5 rounded-full">
               <XCircle size={11} /> Not connected
             </span>
           )}
         </div>
         {account.connected ? (
-          <p className="text-xs text-gray-400 mt-0.5">
+          <p className="text-xs text-[#092137]/40 mt-0.5">
             {account.username ?? account.account_name ?? 'Connected'}
             {account.followers ? ` · ${formatNumber(account.followers)} followers` : ''}
           </p>
         ) : (
-          <p className="text-xs text-gray-400 mt-0.5">Click "Connect" to authorise via OAuth</p>
+          <p className="text-xs text-[#092137]/40 mt-0.5">Click "Connect" to authorise via OAuth</p>
         )}
       </div>
       <div className="flex items-center gap-2 flex-shrink-0">
         {account.connected ? (
           <>
-            <button title="Refresh token" className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition-colors">
+            <button title="Refresh token" className="w-8 h-8 rounded-lg bg-[#EDE8DC] hover:bg-gray-200 flex items-center justify-center text-[#092137]/50 transition-colors">
               <RefreshCw size={14} />
             </button>
             <button onClick={handleDisconnect} disabled={disconnectMutation.isPending} className="btn-danger text-xs py-1.5 px-3">
@@ -133,31 +133,31 @@ function ClientSection({ client, allAccounts }) {
   const connectedCount = allAccounts.filter(a => a.connected).length
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+    <div className="bg-white rounded-xl border border-[#EDE8DC] overflow-hidden">
       <button
         onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center gap-3 p-4 hover:bg-gray-50 transition-colors"
+        className="w-full flex items-center gap-3 p-4 hover:bg-[#F5F1E9] transition-colors"
       >
         <div className="w-10 h-10 rounded-xl bg-wom-gold flex items-center justify-center text-[#092137] font-bold text-sm flex-shrink-0">
           {client.client_name?.charAt(0) ?? '?'}
         </div>
         <div className="flex-1 text-left">
-          <p className="font-semibold text-gray-900">{client.client_name}</p>
-          <p className="text-xs text-gray-400">{client.industry ?? '—'} · {connectedCount}/{PLATFORMS.length} platforms connected</p>
+          <p className="font-semibold text-[#092137]">{client.client_name}</p>
+          <p className="text-xs text-[#092137]/40">{client.industry ?? '—'} · {connectedCount}/{PLATFORMS.length} platforms connected</p>
         </div>
         <div className="hidden sm:flex items-center gap-2 mr-4">
-          <div className="w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+          <div className="w-24 h-1.5 bg-[#EDE8DC] rounded-full overflow-hidden">
             <div className="h-full bg-wom-gold rounded-full transition-all duration-500" style={{ width: `${(connectedCount / PLATFORMS.length) * 100}%` }} />
           </div>
-          <span className="text-xs text-gray-400">{connectedCount}/{PLATFORMS.length}</span>
+          <span className="text-xs text-[#092137]/40">{connectedCount}/{PLATFORMS.length}</span>
         </div>
-        {open ? <ChevronUp size={18} className="text-gray-400 flex-shrink-0" /> : <ChevronDown size={18} className="text-gray-400 flex-shrink-0" />}
+        {open ? <ChevronUp size={18} className="text-[#092137]/40 flex-shrink-0" /> : <ChevronDown size={18} className="text-[#092137]/40 flex-shrink-0" />}
       </button>
 
       {open && (
         <div className="px-4 pb-4 space-y-2.5 border-t border-gray-50">
           <div className="pt-3">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Platform Connections</p>
+            <p className="text-xs font-semibold text-[#092137]/40 uppercase tracking-wider mb-3">Platform Connections</p>
           </div>
           {fullList.map(account => (
             <AccountRow key={account.id} account={account} />
@@ -190,8 +190,8 @@ export default function Accounts() {
           <Lock size={18} className="text-white" />
         </div>
         <div className="flex-1">
-          <h3 className="font-semibold text-gray-900 mb-1">Connecting Social Media Accounts via OAuth 2.0</h3>
-          <p className="text-sm text-gray-600">
+          <h3 className="font-semibold text-[#092137] mb-1">Connecting Social Media Accounts via OAuth 2.0</h3>
+          <p className="text-sm text-[#092137]/60">
             Each platform uses secure OAuth 2.0 authorisation. The client is redirected to the platform's
             login page, grants permissions, then returns. Access tokens are stored encrypted in Supabase —
             <strong> we never see passwords</strong>.
@@ -201,7 +201,7 @@ export default function Accounts() {
               <button
                 key={p.id}
                 onClick={() => setInfoPanel(p.id)}
-                className="flex items-center gap-1.5 text-xs bg-white border border-gray-200 px-2.5 py-1 rounded-full hover:border-wom-gold/40 hover:bg-[#FEF8EC] transition-colors"
+                className="flex items-center gap-1.5 text-xs bg-white border border-[#EDE8DC] px-2.5 py-1 rounded-full hover:border-wom-gold/40 hover:bg-[#FEF8EC] transition-colors"
               >
                 <PlatformIcon platform={p.id} size={14} />
                 {p.label}
@@ -213,11 +213,11 @@ export default function Accounts() {
 
       {/* Client sections */}
       {isLoading ? (
-        <div className="flex items-center justify-center py-16 text-gray-400 gap-2">
+        <div className="flex items-center justify-center py-16 text-[#092137]/40 gap-2">
           <Loader2 size={20} className="animate-spin" /> Loading accounts...
         </div>
       ) : filteredClients.length === 0 ? (
-        <div className="text-center py-16 text-gray-400">
+        <div className="text-center py-16 text-[#092137]/40">
           <p>No active clients found.</p>
         </div>
       ) : (

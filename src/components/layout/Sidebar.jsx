@@ -1,9 +1,10 @@
 import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, Users, Link2, CalendarDays,
-  PenSquare, BarChart3, Settings, ChevronLeft, ChevronRight, Megaphone,
+  PenSquare, BarChart3, Settings, ChevronLeft, ChevronRight,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import WOMLogoMark from '@/components/ui/WOMLogoMark'
 
 const NAV_ITEMS = [
   { to: '/',          label: 'Dashboard',          icon: LayoutDashboard, exact: true },
@@ -35,13 +36,7 @@ export default function Sidebar({ collapsed, onToggle }) {
         )}
         style={{ borderBottom: '1px solid rgba(245,241,233,0.1)' }}
       >
-        {/* Gold WOM icon */}
-        <div
-          className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-          style={{ backgroundColor: '#F0A629' }}
-        >
-          <Megaphone size={16} style={{ color: '#092137' }} />
-        </div>
+        <WOMLogoMark size={collapsed ? 32 : 34} />
         {!collapsed && (
           <div className="overflow-hidden">
             <p

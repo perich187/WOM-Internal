@@ -23,8 +23,8 @@ function PlatformToggle({ platform, selected, connected, onChange }) {
         'flex items-center gap-2 px-3 py-2 rounded-xl border-2 transition-all text-sm',
         !connected && 'opacity-40 cursor-not-allowed',
         selected ? 'border-wom-gold bg-[#FEF8EC] text-wom-gold' :
-        connected ? 'border-gray-200 bg-white text-gray-600 hover:border-gray-300' :
-        'border-gray-100 bg-gray-50 text-gray-400'
+        connected ? 'border-[#EDE8DC] bg-white text-[#092137]/60 hover:border-gray-300' :
+        'border-[#EDE8DC] bg-[#F5F1E9] text-[#092137]/40'
       )}
     >
       <PlatformIcon platform={platform.id} size={18} />
@@ -44,10 +44,10 @@ function PostPreview({ content, platform, client }) {
   const clientName = client?.client_name ?? 'Client'
 
   return (
-    <div className={cn('rounded-xl overflow-hidden border', isDark ? 'border-gray-700' : 'border-gray-200')}>
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-100 bg-gray-50">
+    <div className={cn('rounded-xl overflow-hidden border', isDark ? 'border-gray-700' : 'border-[#EDE8DC]')}>
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-[#EDE8DC] bg-[#F5F1E9]">
         <PlatformIcon platform={platform} size={16} />
-        <span className="text-xs font-medium text-gray-600 capitalize">{platform} Preview</span>
+        <span className="text-xs font-medium text-[#092137]/60 capitalize">{platform} Preview</span>
       </div>
       <div className={cn('p-4', previewBg)}>
         <div className="flex items-center gap-2 mb-3">
@@ -55,23 +55,23 @@ function PostPreview({ content, platform, client }) {
             {clientName.charAt(0)}
           </div>
           <div>
-            <p className={cn('text-xs font-semibold leading-tight', isDark ? 'text-white' : 'text-gray-900')}>{clientName}</p>
-            <p className={cn('text-xs leading-tight', isDark ? 'text-gray-400' : 'text-gray-500')}>Just now</p>
+            <p className={cn('text-xs font-semibold leading-tight', isDark ? 'text-white' : 'text-[#092137]')}>{clientName}</p>
+            <p className={cn('text-xs leading-tight', isDark ? 'text-[#092137]/40' : 'text-[#092137]/50')}>Just now</p>
           </div>
         </div>
         {content ? (
-          <p className={cn('text-sm whitespace-pre-wrap leading-relaxed', isDark ? 'text-white' : 'text-gray-800')}>
+          <p className={cn('text-sm whitespace-pre-wrap leading-relaxed', isDark ? 'text-white' : 'text-[#092137]')}>
             {content.slice(0, charLimit)}
             {overLimit && <span className="text-red-400"> [truncated]</span>}
           </p>
         ) : (
-          <p className={cn('text-sm italic', isDark ? 'text-gray-500' : 'text-gray-400')}>Your post will appear here...</p>
+          <p className={cn('text-sm italic', isDark ? 'text-[#092137]/50' : 'text-[#092137]/40')}>Your post will appear here...</p>
         )}
-        <div className={cn('flex gap-4 mt-3 pt-3 border-t text-xs', isDark ? 'border-gray-700 text-gray-400' : 'border-gray-100 text-gray-400')}>
+        <div className={cn('flex gap-4 mt-3 pt-3 border-t text-xs', isDark ? 'border-gray-700 text-[#092137]/40' : 'border-[#EDE8DC] text-[#092137]/40')}>
           <span>❤️ Like</span><span>💬 Comment</span><span>↗️ Share</span>
         </div>
       </div>
-      <div className={cn('px-3 py-1.5 flex justify-end bg-gray-50 border-t border-gray-100 text-xs', overLimit ? 'text-red-500' : 'text-gray-400')}>
+      <div className={cn('px-3 py-1.5 flex justify-end bg-[#F5F1E9] border-t border-[#EDE8DC] text-xs', overLimit ? 'text-red-500' : 'text-[#092137]/40')}>
         {content.length} / {charLimit.toLocaleString()} characters
       </div>
     </div>
@@ -146,12 +146,12 @@ export default function Compose() {
                   onClick={() => stepNum < step && setStep(stepNum)}
                   className={cn('w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all',
                     isDone ? 'bg-wom-teal text-white cursor-pointer' :
-                    isActive ? 'bg-wom-gold text-[#092137]' : 'bg-gray-100 text-gray-400'
+                    isActive ? 'bg-wom-gold text-[#092137]' : 'bg-[#EDE8DC] text-[#092137]/40'
                   )}
                 >
                   {isDone ? <Check size={13} /> : stepNum}
                 </button>
-                <span className={cn('text-sm font-medium hidden sm:block', isActive ? 'text-gray-900' : 'text-gray-400')}>{label}</span>
+                <span className={cn('text-sm font-medium hidden sm:block', isActive ? 'text-[#092137]' : 'text-[#092137]/40')}>{label}</span>
               </div>
               {idx < 2 && <div className={cn('h-px w-8 flex-shrink-0', step > stepNum ? 'bg-wom-teal' : 'bg-gray-200')} />}
             </div>
@@ -165,10 +165,10 @@ export default function Compose() {
 
           {/* Step 1 */}
           {step === 1 && (
-            <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-4 animate-fade-in">
-              <h3 className="font-semibold text-gray-900">Select Client</h3>
+            <div className="bg-white rounded-xl border border-[#EDE8DC] p-5 space-y-4 animate-fade-in">
+              <h3 className="font-semibold text-[#092137]">Select Client</h3>
               {clientsLoading ? (
-                <div className="flex items-center gap-2 text-gray-400 py-4"><Loader2 size={16} className="animate-spin" /> Loading clients...</div>
+                <div className="flex items-center gap-2 text-[#092137]/40 py-4"><Loader2 size={16} className="animate-spin" /> Loading clients...</div>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {(clients ?? []).filter(c => c.status === 'Active').map(c => (
@@ -176,13 +176,13 @@ export default function Compose() {
                       key={c.id}
                       onClick={() => { setSelectedClientId(c.id); setSelectedPlatforms([]) }}
                       className={cn('flex items-center gap-2 p-3 rounded-xl border-2 transition-all text-left',
-                        selectedClientId === c.id ? 'border-wom-gold bg-[#FEF8EC]' : 'border-gray-200 hover:border-gray-300'
+                        selectedClientId === c.id ? 'border-wom-gold bg-[#FEF8EC]' : 'border-[#EDE8DC] hover:border-gray-300'
                       )}
                     >
                       <div className="w-8 h-8 rounded-lg bg-wom-gold flex items-center justify-center text-[#092137] text-sm font-bold flex-shrink-0">
                         {c.client_name?.charAt(0) ?? '?'}
                       </div>
-                      <span className="text-sm font-medium text-gray-700 truncate">{c.client_name}</span>
+                      <span className="text-sm font-medium text-[#092137]/80 truncate">{c.client_name}</span>
                       {selectedClientId === c.id && <Check size={14} className="ml-auto text-wom-gold flex-shrink-0" />}
                     </button>
                   ))}
@@ -191,7 +191,7 @@ export default function Compose() {
 
               {selectedClientId && (
                 <>
-                  <h3 className="font-semibold text-gray-900 pt-2">Select Platforms</h3>
+                  <h3 className="font-semibold text-[#092137] pt-2">Select Platforms</h3>
                   <div className="grid grid-cols-2 gap-2">
                     {PLATFORMS.map(platform => (
                       <PlatformToggle
@@ -223,12 +223,12 @@ export default function Compose() {
 
           {/* Step 2 */}
           {step === 2 && (
-            <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-4 animate-fade-in">
+            <div className="bg-white rounded-xl border border-[#EDE8DC] p-5 space-y-4 animate-fade-in">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-gray-900">Write Your Post</h3>
+                <h3 className="font-semibold text-[#092137]">Write Your Post</h3>
                 <div className="flex gap-1">
                   {selectedPlatforms.map(p => (
-                    <button key={p} onClick={() => setPreviewPlatform(p)} className={cn('rounded-lg p-1 transition-colors', previewPlatform === p ? 'bg-purple-100' : 'hover:bg-gray-100')}>
+                    <button key={p} onClick={() => setPreviewPlatform(p)} className={cn('rounded-lg p-1 transition-colors', previewPlatform === p ? 'bg-purple-100' : 'hover:bg-[#EDE8DC]')}>
                       <PlatformIcon platform={p} size={20} />
                     </button>
                   ))}
@@ -236,11 +236,11 @@ export default function Compose() {
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs text-gray-400">Posting to:</span>
+                <span className="text-xs text-[#092137]/40">Posting to:</span>
                 {selectedPlatforms.map(p => {
                   const platform = PLATFORMS.find(pl => pl.id === p)
                   return (
-                    <span key={p} className="flex items-center gap-1 text-xs bg-gray-100 px-2 py-0.5 rounded-full">
+                    <span key={p} className="flex items-center gap-1 text-xs bg-[#EDE8DC] px-2 py-0.5 rounded-full">
                       <PlatformIcon platform={p} size={12} /> {platform?.label}
                     </span>
                   )
@@ -253,7 +253,7 @@ export default function Compose() {
                   onChange={e => setContent(e.target.value)}
                   placeholder="What would you like to share? Write your post here..."
                   rows={8}
-                  className="w-full p-4 text-sm border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-wom-gold/30 focus:border-wom-gold leading-relaxed"
+                  className="w-full p-4 text-sm border border-[#EDE8DC] rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-wom-gold/30 focus:border-wom-gold leading-relaxed"
                 />
                 <div className="absolute bottom-3 right-3 text-xs text-gray-300">{content.length} chars</div>
               </div>
@@ -268,9 +268,9 @@ export default function Compose() {
                 return null
               })}
 
-              <div className="flex items-center gap-1 pt-1 border-t border-gray-100">
+              <div className="flex items-center gap-1 pt-1 border-t border-[#EDE8DC]">
                 {[{ icon: Image, title: 'Add image' }, { icon: Video, title: 'Add video' }, { icon: Smile, title: 'Add emoji' }, { icon: Hash, title: 'Add hashtag' }, { icon: Link2, title: 'Add link' }].map(({ icon: Icon, title }) => (
-                  <button key={title} className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors" title={title}>
+                  <button key={title} className="w-8 h-8 rounded-lg hover:bg-[#EDE8DC] flex items-center justify-center text-[#092137]/40 hover:text-[#092137]/60 transition-colors" title={title}>
                     <Icon size={16} />
                   </button>
                 ))}
@@ -288,8 +288,8 @@ export default function Compose() {
 
           {/* Step 3 */}
           {step === 3 && (
-            <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-4 animate-fade-in">
-              <h3 className="font-semibold text-gray-900">When to Publish?</h3>
+            <div className="bg-white rounded-xl border border-[#EDE8DC] p-5 space-y-4 animate-fade-in">
+              <h3 className="font-semibold text-[#092137]">When to Publish?</h3>
 
               <div className="space-y-2">
                 {[
@@ -301,17 +301,17 @@ export default function Compose() {
                     key={value}
                     onClick={() => setScheduleType(value)}
                     className={cn('w-full flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all',
-                      scheduleType === value ? 'border-wom-gold bg-[#FEF8EC]' : 'border-gray-200 hover:border-gray-300'
+                      scheduleType === value ? 'border-wom-gold bg-[#FEF8EC]' : 'border-[#EDE8DC] hover:border-gray-300'
                     )}
                   >
                     <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0',
-                      scheduleType === value ? 'bg-wom-gold text-[#092137]' : 'bg-gray-100 text-gray-500'
+                      scheduleType === value ? 'bg-wom-gold text-[#092137]' : 'bg-[#EDE8DC] text-[#092137]/50'
                     )}>
                       <Icon size={18} />
                     </div>
                     <div>
-                      <p className="font-medium text-sm text-gray-800">{label}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">{desc}</p>
+                      <p className="font-medium text-sm text-[#092137]">{label}</p>
+                      <p className="text-xs text-[#092137]/40 mt-0.5">{desc}</p>
                     </div>
                     {scheduleType === value && <Check size={16} className="ml-auto text-wom-gold flex-shrink-0 mt-0.5" />}
                   </button>
@@ -320,30 +320,30 @@ export default function Compose() {
 
               {scheduleType === 'schedule' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Date & Time (AEST)</label>
+                  <label className="block text-sm font-medium text-[#092137]/80 mb-1.5">Date & Time (AEST)</label>
                   <input
                     type="datetime-local"
                     value={scheduleDate}
                     onChange={e => setScheduleDate(e.target.value)}
                     min={format(new Date(), "yyyy-MM-dd'T'HH:mm")}
-                    className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-wom-gold/30 focus:border-wom-gold"
+                    className="w-full px-3.5 py-2.5 text-sm border border-[#EDE8DC] rounded-xl focus:outline-none focus:ring-2 focus:ring-wom-gold/30 focus:border-wom-gold"
                   />
                 </div>
               )}
 
               {/* Summary */}
-              <div className="bg-gray-50 rounded-xl p-4 text-sm space-y-2">
-                <p className="font-semibold text-gray-700">Post Summary</p>
-                <div className="flex items-center gap-2 text-gray-600">
-                  <span className="text-gray-400 w-20 text-xs">Client:</span>
+              <div className="bg-[#F5F1E9] rounded-xl p-4 text-sm space-y-2">
+                <p className="font-semibold text-[#092137]/80">Post Summary</p>
+                <div className="flex items-center gap-2 text-[#092137]/60">
+                  <span className="text-[#092137]/40 w-20 text-xs">Client:</span>
                   <span className="font-medium">{client?.client_name}</span>
                 </div>
-                <div className="flex items-center gap-2 text-gray-600">
-                  <span className="text-gray-400 w-20 text-xs">Platforms:</span>
+                <div className="flex items-center gap-2 text-[#092137]/60">
+                  <span className="text-[#092137]/40 w-20 text-xs">Platforms:</span>
                   <div className="flex gap-1">{selectedPlatforms.map(p => <PlatformIcon key={p} platform={p} size={16} />)}</div>
                 </div>
-                <div className="flex items-start gap-2 text-gray-600">
-                  <span className="text-gray-400 w-20 text-xs flex-shrink-0">Content:</span>
+                <div className="flex items-start gap-2 text-[#092137]/60">
+                  <span className="text-[#092137]/40 w-20 text-xs flex-shrink-0">Content:</span>
                   <span className="text-xs line-clamp-2">{content}</span>
                 </div>
               </div>
@@ -364,21 +364,21 @@ export default function Compose() {
         {/* Preview */}
         <div className="lg:col-span-2 space-y-3">
           <div className="sticky top-24">
-            <h3 className="font-semibold text-gray-700 text-sm mb-3 flex items-center gap-2"><Eye size={15} /> Live Preview</h3>
+            <h3 className="font-semibold text-[#092137]/80 text-sm mb-3 flex items-center gap-2"><Eye size={15} /> Live Preview</h3>
             {selectedPlatforms.length === 0 ? (
-              <div className="bg-white rounded-xl border border-dashed border-gray-200 p-8 text-center text-gray-400">
+              <div className="bg-white rounded-xl border border-dashed border-[#EDE8DC] p-8 text-center text-[#092137]/40">
                 <Eye size={28} className="mx-auto mb-2 opacity-30" />
                 <p className="text-sm">Select platforms to see a preview</p>
               </div>
             ) : (
               <div className="space-y-3">
-                <div className="flex gap-1 bg-gray-100 rounded-full p-1">
+                <div className="flex gap-1 bg-[#EDE8DC] rounded-full p-1">
                   {selectedPlatforms.map(p => (
                     <button
                       key={p}
                       onClick={() => setPreviewPlatform(p)}
                       className={cn('flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-full text-xs font-medium transition-all',
-                        previewPlatform === p ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'
+                        previewPlatform === p ? 'bg-white shadow-sm text-[#092137]' : 'text-[#092137]/50 hover:text-[#092137]/80'
                       )}
                     >
                       <PlatformIcon platform={p} size={13} />

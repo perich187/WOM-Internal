@@ -40,12 +40,12 @@ function StatCard({ label, value, sub, icon: Icon, color, bg, loading }) {
         </div>
       </div>
       {loading ? (
-        <div className="h-8 w-20 bg-gray-100 animate-pulse rounded-lg mb-1" />
+        <div className="h-8 w-20 bg-[#EDE8DC] animate-pulse rounded-lg mb-1" />
       ) : (
-        <p className="text-2xl font-bold text-gray-900 mb-0.5">{value}</p>
+        <p className="text-2xl font-bold text-[#092137] mb-0.5">{value}</p>
       )}
-      <p className="text-sm text-gray-500">{label}</p>
-      {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
+      <p className="text-sm text-[#092137]/50">{label}</p>
+      {sub && <p className="text-xs text-[#092137]/40 mt-1">{sub}</p>}
     </div>
   )
 }
@@ -92,8 +92,8 @@ export default function Dashboard() {
       {/* Welcome */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">Good morning, {firstName} 👋</h2>
-          <p className="text-sm text-gray-500 mt-0.5">Here's what's happening across your clients today.</p>
+          <h2 className="text-xl font-bold text-[#092137]">Good morning, {firstName} 👋</h2>
+          <p className="text-sm text-[#092137]/50 mt-0.5">Here's what's happening across your clients today.</p>
         </div>
         <button onClick={() => navigate('/compose')} className="btn-primary">+ New Post</button>
       </div>
@@ -108,11 +108,11 @@ export default function Dashboard() {
       {/* Charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Reach chart */}
-        <div className="lg:col-span-2 bg-white rounded-xl border border-gray-100 p-5">
+        <div className="lg:col-span-2 bg-white rounded-xl border border-[#EDE8DC] p-5">
           <div className="flex items-center justify-between mb-5">
             <div>
-              <h3 className="font-semibold text-gray-900">Reach Overview</h3>
-              <p className="text-xs text-gray-400 mt-0.5">All clients combined — last 7 months</p>
+              <h3 className="font-semibold text-[#092137]">Reach Overview</h3>
+              <p className="text-xs text-[#092137]/40 mt-0.5">All clients combined — last 7 months</p>
             </div>
             <div className="flex items-center gap-1.5 text-sm text-wom-teal font-medium">
               <TrendingUp size={15} /> Live analytics coming soon
@@ -136,9 +136,9 @@ export default function Dashboard() {
         </div>
 
         {/* Engagement by platform */}
-        <div className="bg-white rounded-xl border border-gray-100 p-5">
-          <h3 className="font-semibold text-gray-900 mb-1">Engagement by Platform</h3>
-          <p className="text-xs text-gray-400 mb-5">All time</p>
+        <div className="bg-white rounded-xl border border-[#EDE8DC] p-5">
+          <h3 className="font-semibold text-[#092137] mb-1">Engagement by Platform</h3>
+          <p className="text-xs text-[#092137]/40 mb-5">All time</p>
           {analytics?.byPlatform?.length ? (
             <div className="space-y-4">
               {analytics.byPlatform.map(({ platform, engagement }) => {
@@ -148,10 +148,10 @@ export default function Dashboard() {
                 return (
                   <div key={platform}>
                     <div className="flex items-center justify-between text-sm mb-1.5">
-                      <span className="font-medium text-gray-700 capitalize">{platform}</span>
-                      <span className="text-gray-400">{formatNumber(engagement)}</span>
+                      <span className="font-medium text-[#092137]/80 capitalize">{platform}</span>
+                      <span className="text-[#092137]/40">{formatNumber(engagement)}</span>
                     </div>
-                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-2 bg-[#EDE8DC] rounded-full overflow-hidden">
                       <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, backgroundColor: color }} />
                     </div>
                   </div>
@@ -159,7 +159,7 @@ export default function Dashboard() {
               })}
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-400">
+            <div className="text-center py-8 text-[#092137]/40">
               <p className="text-sm">No analytics data yet.</p>
               <p className="text-xs mt-1">Publish posts to see engagement.</p>
             </div>
@@ -170,9 +170,9 @@ export default function Dashboard() {
       {/* Upcoming posts + Clients */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Upcoming scheduled */}
-        <div className="lg:col-span-2 bg-white rounded-xl border border-gray-100 p-5">
+        <div className="lg:col-span-2 bg-white rounded-xl border border-[#EDE8DC] p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-gray-900">Upcoming Scheduled Posts</h3>
+            <h3 className="font-semibold text-[#092137]">Upcoming Scheduled Posts</h3>
             <button onClick={() => navigate('/calendar')} className="text-sm text-wom-gold hover:underline flex items-center gap-1">
               View all <ArrowRight size={14} />
             </button>
@@ -181,11 +181,11 @@ export default function Dashboard() {
           {postsLoading ? (
             <div className="space-y-3">
               {[1, 2, 3].map(i => (
-                <div key={i} className="h-16 bg-gray-50 rounded-xl animate-pulse" />
+                <div key={i} className="h-16 bg-[#F5F1E9] rounded-xl animate-pulse" />
               ))}
             </div>
           ) : upcomingPosts.length === 0 ? (
-            <div className="text-center py-12 text-gray-400">
+            <div className="text-center py-12 text-[#092137]/40">
               <Calendar size={32} className="mx-auto mb-2 opacity-40" />
               <p className="text-sm">No scheduled posts yet.</p>
               <button onClick={() => navigate('/compose')} className="btn-primary mt-4 text-sm">Create a post</button>
@@ -196,19 +196,19 @@ export default function Dashboard() {
                 const { label, cls } = STATUS_LABEL[post.status] ?? {}
                 const clientName = post.clients?.client_name ?? '—'
                 return (
-                  <div key={post.id} className="flex items-start gap-3 p-3 rounded-lg border border-gray-100 hover:border-wom-gold/30 hover:bg-[#FEF8EC]/50 transition-colors cursor-pointer">
+                  <div key={post.id} className="flex items-start gap-3 p-3 rounded-lg border border-[#EDE8DC] hover:border-wom-gold/30 hover:bg-[#FEF8EC]/50 transition-colors cursor-pointer">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="text-xs font-semibold text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full">{clientName}</span>
+                        <span className="text-xs font-semibold text-[#092137]/60 bg-[#EDE8DC] px-2 py-0.5 rounded-full">{clientName}</span>
                         {cls && <span className={cls}>{label}</span>}
                         <div className="flex items-center gap-1 ml-auto">
                           {(post.platforms ?? []).map(p => <PlatformIcon key={p} platform={p} size={16} />)}
                         </div>
                       </div>
-                      <p className="text-sm text-gray-700 line-clamp-2">{post.content}</p>
+                      <p className="text-sm text-[#092137]/80 line-clamp-2">{post.content}</p>
                     </div>
                     <div className="flex-shrink-0 text-right">
-                      <div className="flex items-center gap-1 text-xs text-gray-400 whitespace-nowrap">
+                      <div className="flex items-center gap-1 text-xs text-[#092137]/40 whitespace-nowrap">
                         <Clock size={11} />
                         {post.scheduled_at ? formatDateTime(post.scheduled_at) : '—'}
                       </div>
@@ -221,19 +221,19 @@ export default function Dashboard() {
         </div>
 
         {/* Clients */}
-        <div className="bg-white rounded-xl border border-gray-100 p-5">
+        <div className="bg-white rounded-xl border border-[#EDE8DC] p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-gray-900">Clients</h3>
+            <h3 className="font-semibold text-[#092137]">Clients</h3>
             <button onClick={() => navigate('/clients')} className="text-sm text-wom-gold hover:underline flex items-center gap-1">
               Manage <ArrowRight size={14} />
             </button>
           </div>
           {clientsLoading ? (
             <div className="space-y-3">
-              {[1, 2, 3].map(i => <div key={i} className="h-10 bg-gray-50 rounded-xl animate-pulse" />)}
+              {[1, 2, 3].map(i => <div key={i} className="h-10 bg-[#F5F1E9] rounded-xl animate-pulse" />)}
             </div>
           ) : !clients?.length ? (
-            <p className="text-sm text-gray-400 text-center py-6">No clients yet.</p>
+            <p className="text-sm text-[#092137]/40 text-center py-6">No clients yet.</p>
           ) : (
             <div className="space-y-3">
               {clients.filter(c => c.status === 'Active').slice(0, 6).map(client => (
@@ -242,8 +242,8 @@ export default function Dashboard() {
                     {client.client_name?.charAt(0) ?? '?'}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-800 truncate">{client.client_name}</p>
-                    <p className="text-xs text-gray-400">{client.industry ?? '—'}</p>
+                    <p className="text-sm font-medium text-[#092137] truncate">{client.client_name}</p>
+                    <p className="text-xs text-[#092137]/40">{client.industry ?? '—'}</p>
                   </div>
                 </div>
               ))}

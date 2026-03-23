@@ -26,7 +26,7 @@ export default function Settings() {
 
         {/* Sidebar nav */}
         <div className="md:col-span-1">
-          <div className="bg-white rounded-xl border border-gray-100 p-2 space-y-0.5">
+          <div className="bg-white rounded-xl border border-[#EDE8DC] p-2 space-y-0.5">
             {SECTIONS.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
@@ -35,7 +35,7 @@ export default function Settings() {
                   'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-left transition-colors',
                   activeSection === id
                     ? 'bg-wom-gold text-[#092137]'
-                    : 'text-gray-600 hover:bg-gray-50'
+                    : 'text-[#092137]/60 hover:bg-[#F5F1E9]'
                 )}
               >
                 <Icon size={16} />
@@ -49,8 +49,8 @@ export default function Settings() {
         <div className="md:col-span-3 space-y-4">
 
           {activeSection === 'profile' && (
-            <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-5 animate-fade-in">
-              <h3 className="font-semibold text-gray-900 text-base">Your Profile</h3>
+            <div className="bg-white rounded-xl border border-[#EDE8DC] p-6 space-y-5 animate-fade-in">
+              <h3 className="font-semibold text-[#092137] text-base">Your Profile</h3>
 
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 rounded-2xl bg-wom-gold flex items-center justify-center text-[#092137] text-xl font-bold">
@@ -58,7 +58,7 @@ export default function Settings() {
                 </div>
                 <div>
                   <button className="btn-secondary text-xs">Change Avatar</button>
-                  <p className="text-xs text-gray-400 mt-1">JPG, PNG or GIF — max 2MB</p>
+                  <p className="text-xs text-[#092137]/40 mt-1">JPG, PNG or GIF — max 2MB</p>
                 </div>
               </div>
 
@@ -68,27 +68,27 @@ export default function Settings() {
                   { label: 'Last Name', value: 'Johnson' },
                 ].map(({ label, value }) => (
                   <div key={label}>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">{label}</label>
+                    <label className="block text-sm font-medium text-[#092137]/80 mb-1.5">{label}</label>
                     <input
                       defaultValue={value}
-                      className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-wom-gold/30 focus:border-wom-gold"
+                      className="w-full px-3.5 py-2.5 text-sm border border-[#EDE8DC] rounded-xl focus:outline-none focus:ring-2 focus:ring-wom-gold/30 focus:border-wom-gold"
                     />
                   </div>
                 ))}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+                <label className="block text-sm font-medium text-[#092137]/80 mb-1.5">Email</label>
                 <input
                   defaultValue="sarah@wordofmouthagency.com.au"
                   type="email"
-                  className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-wom-gold/30 focus:border-wom-gold"
+                  className="w-full px-3.5 py-2.5 text-sm border border-[#EDE8DC] rounded-xl focus:outline-none focus:ring-2 focus:ring-wom-gold/30 focus:border-wom-gold"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Role</label>
-                <select className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-wom-gold/30 bg-white">
+                <label className="block text-sm font-medium text-[#092137]/80 mb-1.5">Role</label>
+                <select className="w-full px-3.5 py-2.5 text-sm border border-[#EDE8DC] rounded-xl focus:outline-none focus:ring-2 focus:ring-wom-gold/30 bg-white">
                   <option>Social Media Manager</option>
                   <option>Content Creator</option>
                   <option>Account Manager</option>
@@ -104,20 +104,20 @@ export default function Settings() {
           )}
 
           {activeSection === 'team' && (
-            <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4 animate-fade-in">
+            <div className="bg-white rounded-xl border border-[#EDE8DC] p-6 space-y-4 animate-fade-in">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-gray-900 text-base">Team Members</h3>
+                <h3 className="font-semibold text-[#092137] text-base">Team Members</h3>
                 <button className="btn-primary text-sm">+ Invite Member</button>
               </div>
               <div className="space-y-3">
                 {MOCK_STAFF.map(member => (
-                  <div key={member.id} className="flex items-center gap-3 p-3 rounded-xl border border-gray-100">
+                  <div key={member.id} className="flex items-center gap-3 p-3 rounded-xl border border-[#EDE8DC]">
                     <div className="w-10 h-10 rounded-xl bg-wom-gold flex items-center justify-center text-[#092137] text-sm font-bold flex-shrink-0">
                       {member.name.split(' ').map(n => n[0]).join('')}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-800">{member.name}</p>
-                      <p className="text-xs text-gray-400">{member.email}</p>
+                      <p className="text-sm font-medium text-[#092137]">{member.name}</p>
+                      <p className="text-xs text-[#092137]/40">{member.email}</p>
                     </div>
                     <span className="text-xs bg-[#FEF8EC] text-wom-gold px-2.5 py-1 rounded-full font-medium">
                       {member.role}
@@ -129,8 +129,8 @@ export default function Settings() {
           )}
 
           {activeSection === 'api' && (
-            <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-5 animate-fade-in">
-              <h3 className="font-semibold text-gray-900 text-base">API Keys & Integrations</h3>
+            <div className="bg-white rounded-xl border border-[#EDE8DC] p-6 space-y-5 animate-fade-in">
+              <h3 className="font-semibold text-[#092137] text-base">API Keys & Integrations</h3>
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-700">
                 <p className="font-medium mb-1">⚠️ Keep these secret</p>
                 <p className="text-xs">API keys must be stored in Supabase environment variables or a secrets manager — never in frontend code.</p>
@@ -143,14 +143,14 @@ export default function Settings() {
                 { platform: 'Twitter / X', key: 'TWITTER_API_KEY, TWITTER_API_SECRET', status: 'not-configured' },
                 { platform: 'Pinterest', key: 'PINTEREST_APP_ID, PINTEREST_APP_SECRET', status: 'not-configured' },
               ].map(({ platform, key, status }) => (
-                <div key={platform} className="flex items-center gap-3 p-4 border border-gray-100 rounded-xl">
+                <div key={platform} className="flex items-center gap-3 p-4 border border-[#EDE8DC] rounded-xl">
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-800">{platform}</p>
-                    <p className="text-xs text-gray-400 font-mono mt-0.5">{key}</p>
+                    <p className="text-sm font-medium text-[#092137]">{platform}</p>
+                    <p className="text-xs text-[#092137]/40 font-mono mt-0.5">{key}</p>
                   </div>
                   <span className={cn(
                     'text-xs px-2.5 py-1 rounded-full font-medium',
-                    status === 'configured' ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-400'
+                    status === 'configured' ? 'bg-green-50 text-green-600' : 'bg-[#EDE8DC] text-[#092137]/40'
                   )}>
                     {status === 'configured' ? '✓ Configured' : 'Not set'}
                   </span>
@@ -161,8 +161,8 @@ export default function Settings() {
           )}
 
           {activeSection === 'notifications' && (
-            <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4 animate-fade-in">
-              <h3 className="font-semibold text-gray-900 text-base">Notification Preferences</h3>
+            <div className="bg-white rounded-xl border border-[#EDE8DC] p-6 space-y-4 animate-fade-in">
+              <h3 className="font-semibold text-[#092137] text-base">Notification Preferences</h3>
               {[
                 { label: 'Post published successfully', desc: 'Notify when a scheduled post goes live' },
                 { label: 'Post failed to publish', desc: 'Alert when a post fails due to an API error' },
@@ -172,8 +172,8 @@ export default function Settings() {
               ].map(({ label, desc }) => (
                 <div key={label} className="flex items-start justify-between gap-4 py-3 border-b border-gray-50 last:border-0">
                   <div>
-                    <p className="text-sm font-medium text-gray-800">{label}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{desc}</p>
+                    <p className="text-sm font-medium text-[#092137]">{label}</p>
+                    <p className="text-xs text-[#092137]/40 mt-0.5">{desc}</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
                     <input type="checkbox" defaultChecked className="sr-only peer" />
@@ -189,19 +189,19 @@ export default function Settings() {
           )}
 
           {activeSection === 'security' && (
-            <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-5 animate-fade-in">
-              <h3 className="font-semibold text-gray-900 text-base">Security</h3>
+            <div className="bg-white rounded-xl border border-[#EDE8DC] p-6 space-y-5 animate-fade-in">
+              <h3 className="font-semibold text-[#092137] text-base">Security</h3>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Current Password</label>
-                <input type="password" placeholder="••••••••" className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-wom-gold/30" />
+                <label className="block text-sm font-medium text-[#092137]/80 mb-1.5">Current Password</label>
+                <input type="password" placeholder="••••••••" className="w-full px-3.5 py-2.5 text-sm border border-[#EDE8DC] rounded-xl focus:outline-none focus:ring-2 focus:ring-wom-gold/30" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">New Password</label>
-                <input type="password" placeholder="••••••••" className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-wom-gold/30" />
+                <label className="block text-sm font-medium text-[#092137]/80 mb-1.5">New Password</label>
+                <input type="password" placeholder="••••••••" className="w-full px-3.5 py-2.5 text-sm border border-[#EDE8DC] rounded-xl focus:outline-none focus:ring-2 focus:ring-wom-gold/30" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Confirm New Password</label>
-                <input type="password" placeholder="••••••••" className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-wom-gold/30" />
+                <label className="block text-sm font-medium text-[#092137]/80 mb-1.5">Confirm New Password</label>
+                <input type="password" placeholder="••••••••" className="w-full px-3.5 py-2.5 text-sm border border-[#EDE8DC] rounded-xl focus:outline-none focus:ring-2 focus:ring-wom-gold/30" />
               </div>
               <button className="btn-primary"><Shield size={15} /> Update Password</button>
             </div>

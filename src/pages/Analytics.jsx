@@ -27,12 +27,12 @@ const POST_TYPE_DATA = [
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
   return (
-    <div className="bg-white border border-gray-100 rounded-xl shadow-lg px-4 py-3 text-xs">
-      <p className="font-semibold text-gray-700 mb-1">{label}</p>
+    <div className="bg-white border border-[#EDE8DC] rounded-xl shadow-lg px-4 py-3 text-xs">
+      <p className="font-semibold text-[#092137]/80 mb-1">{label}</p>
       {payload.map(p => (
         <div key={p.name} className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }} />
-          <span className="text-gray-500">{p.name}:</span>
+          <span className="text-[#092137]/50">{p.name}:</span>
           <span className="font-medium">{formatNumber(p.value)}</span>
         </div>
       ))}
@@ -77,19 +77,19 @@ export default function Analytics() {
         <select
           value={clientFilter}
           onChange={e => setClientFilter(e.target.value)}
-          className="text-sm border border-gray-200 rounded-full px-4 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-wom-gold/30"
+          className="text-sm border border-[#EDE8DC] rounded-full px-4 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-wom-gold/30"
         >
           <option value="all">All Clients</option>
           {(clients ?? []).map(c => <option key={c.id} value={c.id}>{c.client_name}</option>)}
         </select>
 
-        <div className="flex bg-gray-100 rounded-full p-0.5 gap-0.5">
+        <div className="flex bg-[#EDE8DC] rounded-full p-0.5 gap-0.5">
           {DATE_RANGES.map(r => (
             <button
               key={r}
               onClick={() => setDateRange(r)}
               className={cn('px-3.5 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap',
-                dateRange === r ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                dateRange === r ? 'bg-white text-[#092137] shadow-sm' : 'text-[#092137]/50 hover:text-[#092137]/80'
               )}
             >
               {r}
@@ -107,15 +107,15 @@ export default function Analytics() {
             <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center mb-3', bg)}>
               <Icon size={20} className={color} />
             </div>
-            {isLoading ? <div className="h-7 w-16 bg-gray-100 animate-pulse rounded mb-1" /> : <p className="text-2xl font-bold text-gray-900 mb-0.5">{value}</p>}
-            <p className="text-sm text-gray-500">{label}</p>
-            {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
+            {isLoading ? <div className="h-7 w-16 bg-[#EDE8DC] animate-pulse rounded mb-1" /> : <p className="text-2xl font-bold text-[#092137] mb-0.5">{value}</p>}
+            <p className="text-sm text-[#092137]/50">{label}</p>
+            {sub && <p className="text-xs text-[#092137]/40 mt-1">{sub}</p>}
           </div>
         ))}
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-20 text-gray-400 gap-2">
+        <div className="flex items-center justify-center py-20 text-[#092137]/40 gap-2">
           <Loader2 size={20} className="animate-spin" /> Loading analytics...
         </div>
       ) : (
@@ -123,9 +123,9 @@ export default function Analytics() {
           {/* Charts row */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
             {/* Platform engagement bar chart */}
-            <div className="lg:col-span-2 bg-white rounded-xl border border-gray-100 p-5">
-              <h3 className="font-semibold text-gray-900 mb-1">Engagements by Platform</h3>
-              <p className="text-xs text-gray-400 mb-5">All time — from published posts</p>
+            <div className="lg:col-span-2 bg-white rounded-xl border border-[#EDE8DC] p-5">
+              <h3 className="font-semibold text-[#092137] mb-1">Engagements by Platform</h3>
+              <p className="text-xs text-[#092137]/40 mb-5">All time — from published posts</p>
               {analytics?.byPlatform?.length ? (
                 <ResponsiveContainer width="100%" height={220}>
                   <BarChart data={analytics.byPlatform} margin={{ top: 0, right: 0, left: -15, bottom: 0 }}>
@@ -141,7 +141,7 @@ export default function Analytics() {
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="flex items-center justify-center h-48 text-gray-400">
+                <div className="flex items-center justify-center h-48 text-[#092137]/40">
                   <div className="text-center">
                     <p className="text-sm">No analytics data yet.</p>
                     <p className="text-xs mt-1">Publish posts to see engagement by platform.</p>
@@ -151,9 +151,9 @@ export default function Analytics() {
             </div>
 
             {/* Post type pie */}
-            <div className="bg-white rounded-xl border border-gray-100 p-5">
-              <h3 className="font-semibold text-gray-900 mb-1">Content Types</h3>
-              <p className="text-xs text-gray-400 mb-4">By post format (estimated)</p>
+            <div className="bg-white rounded-xl border border-[#EDE8DC] p-5">
+              <h3 className="font-semibold text-[#092137] mb-1">Content Types</h3>
+              <p className="text-xs text-[#092137]/40 mb-4">By post format (estimated)</p>
               <ResponsiveContainer width="100%" height={160}>
                 <PieChart>
                   <Pie data={POST_TYPE_DATA} cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={3} dataKey="value">
@@ -166,8 +166,8 @@ export default function Analytics() {
                 {POST_TYPE_DATA.map(({ name, value, color }) => (
                   <div key={name} className="flex items-center gap-2 text-sm">
                     <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-                    <span className="text-gray-600 flex-1">{name}</span>
-                    <span className="font-semibold text-gray-900">{value}%</span>
+                    <span className="text-[#092137]/60 flex-1">{name}</span>
+                    <span className="font-semibold text-[#092137]">{value}%</span>
                   </div>
                 ))}
               </div>
@@ -177,11 +177,11 @@ export default function Analytics() {
           {/* Posts & client performance */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             {/* Client post performance */}
-            <div className="bg-white rounded-xl border border-gray-100 p-5">
-              <h3 className="font-semibold text-gray-900 mb-1">Posts by Client</h3>
-              <p className="text-xs text-gray-400 mb-4">All time</p>
+            <div className="bg-white rounded-xl border border-[#EDE8DC] p-5">
+              <h3 className="font-semibold text-[#092137] mb-1">Posts by Client</h3>
+              <p className="text-xs text-[#092137]/40 mb-4">All time</p>
               {clientPerf.length === 0 ? (
-                <p className="text-sm text-gray-400 py-8 text-center">No posts yet.</p>
+                <p className="text-sm text-[#092137]/40 py-8 text-center">No posts yet.</p>
               ) : (
                 <div className="space-y-3">
                   {clientPerf.sort((a, b) => b.posts - a.posts).map(client => (
@@ -191,10 +191,10 @@ export default function Analytics() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
-                          <p className="text-sm font-medium text-gray-700 truncate">{client.name}</p>
-                          <span className="text-xs text-gray-400 ml-2">{client.posts} posts</span>
+                          <p className="text-sm font-medium text-[#092137]/80 truncate">{client.name}</p>
+                          <span className="text-xs text-[#092137]/40 ml-2">{client.posts} posts</span>
                         </div>
-                        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="h-1.5 bg-[#EDE8DC] rounded-full overflow-hidden">
                           <div
                             className="h-full rounded-full bg-wom-gold"
                             style={{ width: `${(client.posts / Math.max(...clientPerf.map(c => c.posts))) * 100}%` }}
@@ -208,21 +208,21 @@ export default function Analytics() {
             </div>
 
             {/* Recent published posts */}
-            <div className="bg-white rounded-xl border border-gray-100 p-5">
-              <h3 className="font-semibold text-gray-900 mb-1">Recently Published</h3>
-              <p className="text-xs text-gray-400 mb-4">Latest posts across all clients</p>
+            <div className="bg-white rounded-xl border border-[#EDE8DC] p-5">
+              <h3 className="font-semibold text-[#092137] mb-1">Recently Published</h3>
+              <p className="text-xs text-[#092137]/40 mb-4">Latest posts across all clients</p>
               {publishedPosts.length === 0 ? (
-                <p className="text-sm text-gray-400 py-8 text-center">No published posts yet.</p>
+                <p className="text-sm text-[#092137]/40 py-8 text-center">No published posts yet.</p>
               ) : (
                 <div className="space-y-3">
                   {publishedPosts.slice(0, 5).map(post => (
-                    <div key={post.id} className="flex items-start gap-3 p-3 rounded-xl border border-gray-100">
+                    <div key={post.id} className="flex items-start gap-3 p-3 rounded-xl border border-[#EDE8DC]">
                       <div className="flex gap-1 flex-shrink-0 pt-0.5">
                         {(post.platforms ?? []).slice(0, 2).map(p => <PlatformIcon key={p} platform={p} size={16} />)}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-gray-500 mb-0.5">{post.clients?.client_name ?? '—'}</p>
-                        <p className="text-sm text-gray-700 line-clamp-2">{post.content}</p>
+                        <p className="text-xs font-medium text-[#092137]/50 mb-0.5">{post.clients?.client_name ?? '—'}</p>
+                        <p className="text-sm text-[#092137]/80 line-clamp-2">{post.content}</p>
                       </div>
                     </div>
                   ))}
