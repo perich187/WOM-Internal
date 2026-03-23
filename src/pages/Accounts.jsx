@@ -73,7 +73,7 @@ function AccountRow({ account, onDisconnect }) {
   return (
     <div className={cn(
       'flex items-center gap-4 p-4 rounded-xl border transition-colors',
-      account.connected ? 'border-gray-100 bg-white hover:border-wom-purple/20' : 'border-dashed border-gray-200 bg-gray-50/50'
+      account.connected ? 'border-gray-100 bg-white hover:border-wom-gold/20' : 'border-dashed border-gray-200 bg-gray-50/50'
     )}>
       <PlatformIcon platform={account.platform} size={36} />
       <div className="flex-1 min-w-0">
@@ -138,7 +138,7 @@ function ClientSection({ client, allAccounts }) {
         onClick={() => setOpen(o => !o)}
         className="w-full flex items-center gap-3 p-4 hover:bg-gray-50 transition-colors"
       >
-        <div className="w-10 h-10 rounded-xl bg-wom-purple flex items-center justify-center text-[#092137] font-bold text-sm flex-shrink-0">
+        <div className="w-10 h-10 rounded-xl bg-wom-gold flex items-center justify-center text-[#092137] font-bold text-sm flex-shrink-0">
           {client.client_name?.charAt(0) ?? '?'}
         </div>
         <div className="flex-1 text-left">
@@ -147,7 +147,7 @@ function ClientSection({ client, allAccounts }) {
         </div>
         <div className="hidden sm:flex items-center gap-2 mr-4">
           <div className="w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-            <div className="h-full bg-wom-purple rounded-full transition-all duration-500" style={{ width: `${(connectedCount / PLATFORMS.length) * 100}%` }} />
+            <div className="h-full bg-wom-gold rounded-full transition-all duration-500" style={{ width: `${(connectedCount / PLATFORMS.length) * 100}%` }} />
           </div>
           <span className="text-xs text-gray-400">{connectedCount}/{PLATFORMS.length}</span>
         </div>
@@ -186,7 +186,7 @@ export default function Accounts() {
     <div className="max-w-4xl mx-auto space-y-5">
       {/* OAuth explainer */}
       <div className="bg-gradient-to-r from-[#FEF8EC] to-blue-50 border border-[#F0A629]/30 rounded-xl p-5 flex items-start gap-4">
-        <div className="w-10 h-10 bg-wom-purple rounded-xl flex items-center justify-center flex-shrink-0">
+        <div className="w-10 h-10 bg-wom-gold rounded-xl flex items-center justify-center flex-shrink-0">
           <Lock size={18} className="text-white" />
         </div>
         <div className="flex-1">
@@ -201,7 +201,7 @@ export default function Accounts() {
               <button
                 key={p.id}
                 onClick={() => setInfoPanel(p.id)}
-                className="flex items-center gap-1.5 text-xs bg-white border border-gray-200 px-2.5 py-1 rounded-full hover:border-wom-purple/40 hover:bg-[#FEF8EC] transition-colors"
+                className="flex items-center gap-1.5 text-xs bg-white border border-gray-200 px-2.5 py-1 rounded-full hover:border-wom-gold/40 hover:bg-[#FEF8EC] transition-colors"
               >
                 <PlatformIcon platform={p.id} size={14} />
                 {p.label}

@@ -9,7 +9,7 @@ export function useClients() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('clients')
-        .select('id, client_name, industry, status, monthly_retainer_value')
+        .select('id, client_name, industry, status, color, website, notes')
         .order('client_name')
       if (error) throw error
       return data

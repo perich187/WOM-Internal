@@ -34,7 +34,7 @@ export default function Settings() {
                 className={cn(
                   'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-left transition-colors',
                   activeSection === id
-                    ? 'bg-wom-purple text-[#092137]'
+                    ? 'bg-wom-gold text-[#092137]'
                     : 'text-gray-600 hover:bg-gray-50'
                 )}
               >
@@ -53,7 +53,7 @@ export default function Settings() {
               <h3 className="font-semibold text-gray-900 text-base">Your Profile</h3>
 
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-2xl bg-wom-purple flex items-center justify-center text-[#092137] text-xl font-bold">
+                <div className="w-16 h-16 rounded-2xl bg-wom-gold flex items-center justify-center text-[#092137] text-xl font-bold">
                   SJ
                 </div>
                 <div>
@@ -71,7 +71,7 @@ export default function Settings() {
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">{label}</label>
                     <input
                       defaultValue={value}
-                      className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-wom-purple/30 focus:border-wom-purple"
+                      className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-wom-gold/30 focus:border-wom-gold"
                     />
                   </div>
                 ))}
@@ -82,13 +82,13 @@ export default function Settings() {
                 <input
                   defaultValue="sarah@wordofmouthagency.com.au"
                   type="email"
-                  className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-wom-purple/30 focus:border-wom-purple"
+                  className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-wom-gold/30 focus:border-wom-gold"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Role</label>
-                <select className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-wom-purple/30 bg-white">
+                <select className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-wom-gold/30 bg-white">
                   <option>Social Media Manager</option>
                   <option>Content Creator</option>
                   <option>Account Manager</option>
@@ -112,14 +112,14 @@ export default function Settings() {
               <div className="space-y-3">
                 {MOCK_STAFF.map(member => (
                   <div key={member.id} className="flex items-center gap-3 p-3 rounded-xl border border-gray-100">
-                    <div className="w-10 h-10 rounded-xl bg-wom-purple flex items-center justify-center text-[#092137] text-sm font-bold flex-shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-wom-gold flex items-center justify-center text-[#092137] text-sm font-bold flex-shrink-0">
                       {member.name.split(' ').map(n => n[0]).join('')}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-800">{member.name}</p>
                       <p className="text-xs text-gray-400">{member.email}</p>
                     </div>
-                    <span className="text-xs bg-[#FEF8EC] text-wom-purple px-2.5 py-1 rounded-full font-medium">
+                    <span className="text-xs bg-[#FEF8EC] text-wom-gold px-2.5 py-1 rounded-full font-medium">
                       {member.role}
                     </span>
                   </div>
@@ -154,7 +154,7 @@ export default function Settings() {
                   )}>
                     {status === 'configured' ? '✓ Configured' : 'Not set'}
                   </span>
-                  <button className="text-xs text-wom-purple hover:underline">Configure →</button>
+                  <button className="text-xs text-wom-gold hover:underline">Configure →</button>
                 </div>
               ))}
             </div>
@@ -177,7 +177,7 @@ export default function Settings() {
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
                     <input type="checkbox" defaultChecked className="sr-only peer" />
-                    <div className="w-10 h-5 bg-gray-200 peer-focus:ring-2 peer-focus:ring-wom-purple/30 rounded-full peer peer-checked:bg-wom-purple transition-colors" />
+                    <div className="w-10 h-5 bg-gray-200 peer-focus:ring-2 peer-focus:ring-wom-gold/30 rounded-full peer peer-checked:bg-wom-gold transition-colors" />
                     <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all peer-checked:translate-x-5" />
                   </label>
                 </div>
@@ -193,15 +193,15 @@ export default function Settings() {
               <h3 className="font-semibold text-gray-900 text-base">Security</h3>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Current Password</label>
-                <input type="password" placeholder="••••••••" className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-wom-purple/30" />
+                <input type="password" placeholder="••••••••" className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-wom-gold/30" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">New Password</label>
-                <input type="password" placeholder="••••••••" className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-wom-purple/30" />
+                <input type="password" placeholder="••••••••" className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-wom-gold/30" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Confirm New Password</label>
-                <input type="password" placeholder="••••••••" className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-wom-purple/30" />
+                <input type="password" placeholder="••••••••" className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-wom-gold/30" />
               </div>
               <button className="btn-primary"><Shield size={15} /> Update Password</button>
             </div>

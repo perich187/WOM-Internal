@@ -83,7 +83,7 @@ export default function Clients() {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search clients..."
-            className="pl-9 pr-4 py-2.5 text-sm bg-white border border-gray-200 rounded-full w-full max-w-xs focus:outline-none focus:ring-2 focus:ring-wom-purple/30 focus:border-wom-purple"
+            className="pl-9 pr-4 py-2.5 text-sm bg-white border border-gray-200 rounded-full w-full max-w-xs focus:outline-none focus:ring-2 focus:ring-wom-gold/30 focus:border-wom-gold"
           />
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -93,7 +93,7 @@ export default function Clients() {
               onClick={() => setFilter(ind)}
               className={cn(
                 'px-3.5 py-1.5 rounded-full text-xs font-medium transition-colors',
-                filter === ind ? 'bg-wom-purple text-[#092137]' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                filter === ind ? 'bg-wom-gold text-[#092137]' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               )}
             >
               {ind}
@@ -114,7 +114,7 @@ export default function Clients() {
         ].map(({ label, value, icon: Icon }) => (
           <div key={label} className="bg-white rounded-xl border border-gray-100 p-4 flex items-center gap-3">
             <div className="w-9 h-9 bg-[#FEF8EC] rounded-xl flex items-center justify-center">
-              <Icon size={18} className="text-wom-purple" />
+              <Icon size={18} className="text-wom-gold" />
             </div>
             <div>
               <p className="text-xl font-bold text-gray-900">{isLoading ? '—' : value}</p>

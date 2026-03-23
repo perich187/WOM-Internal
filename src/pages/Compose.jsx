@@ -22,14 +22,14 @@ function PlatformToggle({ platform, selected, connected, onChange }) {
       className={cn(
         'flex items-center gap-2 px-3 py-2 rounded-xl border-2 transition-all text-sm',
         !connected && 'opacity-40 cursor-not-allowed',
-        selected ? 'border-wom-purple bg-[#FEF8EC] text-wom-purple' :
+        selected ? 'border-wom-gold bg-[#FEF8EC] text-wom-gold' :
         connected ? 'border-gray-200 bg-white text-gray-600 hover:border-gray-300' :
         'border-gray-100 bg-gray-50 text-gray-400'
       )}
     >
       <PlatformIcon platform={platform.id} size={18} />
       <span className="font-medium">{platform.label}</span>
-      {selected && <Check size={14} className="ml-auto text-wom-purple" />}
+      {selected && <Check size={14} className="ml-auto text-wom-gold" />}
       {!connected && <span className="ml-auto text-xs text-gray-300">Not connected</span>}
     </button>
   )
@@ -51,7 +51,7 @@ function PostPreview({ content, platform, client }) {
       </div>
       <div className={cn('p-4', previewBg)}>
         <div className="flex items-center gap-2 mb-3">
-          <div className="w-8 h-8 rounded-full bg-wom-purple flex items-center justify-center text-[#092137] text-xs font-bold">
+          <div className="w-8 h-8 rounded-full bg-wom-gold flex items-center justify-center text-[#092137] text-xs font-bold">
             {clientName.charAt(0)}
           </div>
           <div>
@@ -146,7 +146,7 @@ export default function Compose() {
                   onClick={() => stepNum < step && setStep(stepNum)}
                   className={cn('w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all',
                     isDone ? 'bg-wom-teal text-white cursor-pointer' :
-                    isActive ? 'bg-wom-purple text-[#092137]' : 'bg-gray-100 text-gray-400'
+                    isActive ? 'bg-wom-gold text-[#092137]' : 'bg-gray-100 text-gray-400'
                   )}
                 >
                   {isDone ? <Check size={13} /> : stepNum}
@@ -176,14 +176,14 @@ export default function Compose() {
                       key={c.id}
                       onClick={() => { setSelectedClientId(c.id); setSelectedPlatforms([]) }}
                       className={cn('flex items-center gap-2 p-3 rounded-xl border-2 transition-all text-left',
-                        selectedClientId === c.id ? 'border-wom-purple bg-[#FEF8EC]' : 'border-gray-200 hover:border-gray-300'
+                        selectedClientId === c.id ? 'border-wom-gold bg-[#FEF8EC]' : 'border-gray-200 hover:border-gray-300'
                       )}
                     >
-                      <div className="w-8 h-8 rounded-lg bg-wom-purple flex items-center justify-center text-[#092137] text-sm font-bold flex-shrink-0">
+                      <div className="w-8 h-8 rounded-lg bg-wom-gold flex items-center justify-center text-[#092137] text-sm font-bold flex-shrink-0">
                         {c.client_name?.charAt(0) ?? '?'}
                       </div>
                       <span className="text-sm font-medium text-gray-700 truncate">{c.client_name}</span>
-                      {selectedClientId === c.id && <Check size={14} className="ml-auto text-wom-purple flex-shrink-0" />}
+                      {selectedClientId === c.id && <Check size={14} className="ml-auto text-wom-gold flex-shrink-0" />}
                     </button>
                   ))}
                 </div>
@@ -253,7 +253,7 @@ export default function Compose() {
                   onChange={e => setContent(e.target.value)}
                   placeholder="What would you like to share? Write your post here..."
                   rows={8}
-                  className="w-full p-4 text-sm border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-wom-purple/30 focus:border-wom-purple leading-relaxed"
+                  className="w-full p-4 text-sm border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-wom-gold/30 focus:border-wom-gold leading-relaxed"
                 />
                 <div className="absolute bottom-3 right-3 text-xs text-gray-300">{content.length} chars</div>
               </div>
@@ -301,11 +301,11 @@ export default function Compose() {
                     key={value}
                     onClick={() => setScheduleType(value)}
                     className={cn('w-full flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all',
-                      scheduleType === value ? 'border-wom-purple bg-[#FEF8EC]' : 'border-gray-200 hover:border-gray-300'
+                      scheduleType === value ? 'border-wom-gold bg-[#FEF8EC]' : 'border-gray-200 hover:border-gray-300'
                     )}
                   >
                     <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0',
-                      scheduleType === value ? 'bg-wom-purple text-[#092137]' : 'bg-gray-100 text-gray-500'
+                      scheduleType === value ? 'bg-wom-gold text-[#092137]' : 'bg-gray-100 text-gray-500'
                     )}>
                       <Icon size={18} />
                     </div>
@@ -313,7 +313,7 @@ export default function Compose() {
                       <p className="font-medium text-sm text-gray-800">{label}</p>
                       <p className="text-xs text-gray-400 mt-0.5">{desc}</p>
                     </div>
-                    {scheduleType === value && <Check size={16} className="ml-auto text-wom-purple flex-shrink-0 mt-0.5" />}
+                    {scheduleType === value && <Check size={16} className="ml-auto text-wom-gold flex-shrink-0 mt-0.5" />}
                   </button>
                 ))}
               </div>
@@ -326,7 +326,7 @@ export default function Compose() {
                     value={scheduleDate}
                     onChange={e => setScheduleDate(e.target.value)}
                     min={format(new Date(), "yyyy-MM-dd'T'HH:mm")}
-                    className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-wom-purple/30 focus:border-wom-purple"
+                    className="w-full px-3.5 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-wom-gold/30 focus:border-wom-gold"
                   />
                 </div>
               )}

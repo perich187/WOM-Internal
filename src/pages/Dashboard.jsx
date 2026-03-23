@@ -66,7 +66,7 @@ export default function Dashboard() {
     {
       label: 'Total Reach This Month',
       value: analytics?.totals?.reach ? formatNumber(analytics.totals.reach) : '—',
-      icon: Eye, color: 'text-wom-purple', bg: 'bg-[#FEF8EC]',
+      icon: Eye, color: 'text-wom-gold', bg: 'bg-[#FEF8EC]',
     },
     {
       label: 'Total Engagements',
@@ -173,7 +173,7 @@ export default function Dashboard() {
         <div className="lg:col-span-2 bg-white rounded-xl border border-gray-100 p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-gray-900">Upcoming Scheduled Posts</h3>
-            <button onClick={() => navigate('/calendar')} className="text-sm text-wom-purple hover:underline flex items-center gap-1">
+            <button onClick={() => navigate('/calendar')} className="text-sm text-wom-gold hover:underline flex items-center gap-1">
               View all <ArrowRight size={14} />
             </button>
           </div>
@@ -196,7 +196,7 @@ export default function Dashboard() {
                 const { label, cls } = STATUS_LABEL[post.status] ?? {}
                 const clientName = post.clients?.client_name ?? '—'
                 return (
-                  <div key={post.id} className="flex items-start gap-3 p-3 rounded-lg border border-gray-100 hover:border-wom-purple/30 hover:bg-[#FEF8EC]/50 transition-colors cursor-pointer">
+                  <div key={post.id} className="flex items-start gap-3 p-3 rounded-lg border border-gray-100 hover:border-wom-gold/30 hover:bg-[#FEF8EC]/50 transition-colors cursor-pointer">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <span className="text-xs font-semibold text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full">{clientName}</span>
@@ -224,7 +224,7 @@ export default function Dashboard() {
         <div className="bg-white rounded-xl border border-gray-100 p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-gray-900">Clients</h3>
-            <button onClick={() => navigate('/clients')} className="text-sm text-wom-purple hover:underline flex items-center gap-1">
+            <button onClick={() => navigate('/clients')} className="text-sm text-wom-gold hover:underline flex items-center gap-1">
               Manage <ArrowRight size={14} />
             </button>
           </div>
@@ -238,7 +238,7 @@ export default function Dashboard() {
             <div className="space-y-3">
               {clients.filter(c => c.status === 'Active').slice(0, 6).map(client => (
                 <div key={client.id} className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-wom-purple flex items-center justify-center text-[#092137] text-sm font-bold flex-shrink-0">
+                  <div className="w-9 h-9 rounded-full bg-wom-gold flex items-center justify-center text-[#092137] text-sm font-bold flex-shrink-0">
                     {client.client_name?.charAt(0) ?? '?'}
                   </div>
                   <div className="flex-1 min-w-0">

@@ -133,13 +133,13 @@ function MonthView({ currentDate, posts, onPostClick, onAddClick }) {
               <div className="flex items-center justify-between mb-1">
                 <span className={cn(
                   'w-6 h-6 flex items-center justify-center text-xs rounded-full font-medium',
-                  isToday(day) ? 'bg-wom-purple text-[#092137]' : isCurrentMonth ? 'text-gray-700' : 'text-gray-300'
+                  isToday(day) ? 'bg-wom-gold text-[#092137]' : isCurrentMonth ? 'text-gray-700' : 'text-gray-300'
                 )}>
                   {format(day, 'd')}
                 </span>
                 <button
                   onClick={() => onAddClick(day)}
-                  className="opacity-0 group-hover:opacity-100 w-5 h-5 rounded-full bg-wom-purple text-[#092137] flex items-center justify-center transition-opacity"
+                  className="opacity-0 group-hover:opacity-100 w-5 h-5 rounded-full bg-wom-gold text-[#092137] flex items-center justify-center transition-opacity"
                 >
                   <Plus size={10} />
                 </button>
@@ -149,7 +149,7 @@ function MonthView({ currentDate, posts, onPostClick, onAddClick }) {
                   <PostPill key={post.id} post={post} onClick={onPostClick} />
                 ))}
                 {dayPosts.length > 3 && (
-                  <button className="w-full text-center text-xs text-gray-400 hover:text-wom-purple">
+                  <button className="w-full text-center text-xs text-gray-400 hover:text-wom-gold">
                     +{dayPosts.length - 3} more
                   </button>
                 )}
@@ -179,7 +179,7 @@ function ListView({ posts, onPostClick }) {
         return (
           <div key={post.id} onClick={() => onPostClick(post)} className="flex items-start gap-4 p-4 hover:bg-gray-50 cursor-pointer transition-colors">
             <div className="text-center flex-shrink-0 w-14">
-              <p className="text-xs font-bold text-wom-purple">{format(parseISO(post.scheduled_at), 'MMM').toUpperCase()}</p>
+              <p className="text-xs font-bold text-wom-gold">{format(parseISO(post.scheduled_at), 'MMM').toUpperCase()}</p>
               <p className="text-2xl font-bold text-gray-900 leading-none">{format(parseISO(post.scheduled_at), 'd')}</p>
               <p className="text-xs text-gray-400">{format(parseISO(post.scheduled_at), 'h:mm a')}</p>
             </div>
@@ -227,7 +227,7 @@ export default function Calendar() {
           <button onClick={() => setCurrentDate(d => addMonths(d, 1))} className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-50">
             <ChevronRight size={16} />
           </button>
-          <button onClick={() => setCurrentDate(new Date())} className="text-xs text-wom-purple border border-wom-purple/30 px-3 py-1.5 rounded-full hover:bg-[#FEF8EC] transition-colors">
+          <button onClick={() => setCurrentDate(new Date())} className="text-xs text-wom-gold border border-wom-gold/30 px-3 py-1.5 rounded-full hover:bg-[#FEF8EC] transition-colors">
             Today
           </button>
         </div>
@@ -236,7 +236,7 @@ export default function Calendar() {
           <select
             value={filterClient}
             onChange={e => setFilterClient(e.target.value)}
-            className="text-sm border border-gray-200 rounded-full px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-wom-purple/30"
+            className="text-sm border border-gray-200 rounded-full px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-wom-gold/30"
           >
             <option value="all">All Clients</option>
             {(clients ?? []).map(c => <option key={c.id} value={c.id}>{c.client_name}</option>)}

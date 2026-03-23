@@ -62,7 +62,7 @@ export default function Analytics() {
   const clientPerf = Object.entries(clientPostCounts).map(([id, v]) => ({ id, ...v }))
 
   const statCards = [
-    { label: 'Total Reach', value: analytics?.totals?.reach ? formatNumber(analytics.totals.reach) : '—', icon: Eye, color: 'text-wom-purple', bg: 'bg-[#FEF8EC]' },
+    { label: 'Total Reach', value: analytics?.totals?.reach ? formatNumber(analytics.totals.reach) : '—', icon: Eye, color: 'text-wom-gold', bg: 'bg-[#FEF8EC]' },
     { label: 'Total Engagements', value: analytics?.totals?.engagement ? formatNumber(analytics.totals.engagement) : '—', icon: Heart, color: 'text-pink-500', bg: 'bg-pink-50' },
     { label: 'Avg. Engagement Rate', value: analytics?.totals?.reach && analytics.totals.engagement ? `${((analytics.totals.engagement / analytics.totals.reach) * 100).toFixed(1)}%` : '—', icon: TrendingUp, color: 'text-wom-teal', bg: 'bg-green-50' },
     { label: 'Total Posts', value: totalPosts || '—', sub: `${publishedPosts.length} published · ${scheduledPosts.length} scheduled`, icon: FileText, color: 'text-wom-cyan', bg: 'bg-blue-50' },
@@ -77,7 +77,7 @@ export default function Analytics() {
         <select
           value={clientFilter}
           onChange={e => setClientFilter(e.target.value)}
-          className="text-sm border border-gray-200 rounded-full px-4 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-wom-purple/30"
+          className="text-sm border border-gray-200 rounded-full px-4 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-wom-gold/30"
         >
           <option value="all">All Clients</option>
           {(clients ?? []).map(c => <option key={c.id} value={c.id}>{c.client_name}</option>)}
@@ -186,7 +186,7 @@ export default function Analytics() {
                 <div className="space-y-3">
                   {clientPerf.sort((a, b) => b.posts - a.posts).map(client => (
                     <div key={client.id} className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-wom-purple flex items-center justify-center text-[#092137] text-xs font-bold flex-shrink-0">
+                      <div className="w-8 h-8 rounded-lg bg-wom-gold flex items-center justify-center text-[#092137] text-xs font-bold flex-shrink-0">
                         {client.name?.charAt(0) ?? '?'}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -196,7 +196,7 @@ export default function Analytics() {
                         </div>
                         <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
                           <div
-                            className="h-full rounded-full bg-wom-purple"
+                            className="h-full rounded-full bg-wom-gold"
                             style={{ width: `${(client.posts / Math.max(...clientPerf.map(c => c.posts))) * 100}%` }}
                           />
                         </div>
