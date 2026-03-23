@@ -13,7 +13,8 @@
 
 import { createClient } from '@supabase/supabase-js'
 
-const APP_ID      = process.env.META_APP_ID
+// Accept either META_APP_ID or VITE_META_APP_ID (both work in serverless functions)
+const APP_ID      = process.env.META_APP_ID || process.env.VITE_META_APP_ID
 const APP_SECRET  = process.env.META_APP_SECRET
 // APP_URL is your Vercel deployment URL, e.g. https://wom-internal.vercel.app
 const APP_URL     = process.env.VITE_APP_URL || `https://${process.env.VERCEL_URL}`
@@ -21,6 +22,16 @@ const REDIRECT_URI = `${APP_URL}/api/meta-oauth`
 const GRAPH       = 'https://graph.facebook.com/v19.0'
 
 export default async function handler(req, res) {
+  // Guard: fail fast if env vars are missing
+  if (!APP_ID || !APP_SECRET || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.error('[meta-oauth] Missing env vars:', {
+      APP_ID: !!APP_ID,
+      APP_SECRET: !!APP_SECRET,
+      SERVICE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+    })
+    return res.redirect('/accounts?error=Server+configuration+error+-+check+Vercel+env+vars')
+  }
+
   const { code, state, error: fbError, error_description } = req.query
 
   // User denied permissions on Facebook
