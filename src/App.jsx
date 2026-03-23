@@ -4,6 +4,7 @@ import { useAuth } from './components/auth/AuthProvider'
 import Layout from './components/layout/Layout'
 import Login from './pages/Login'
 import Privacy from './pages/Privacy'
+import DataDeletion from './pages/DataDeletion'
 import Dashboard from './pages/Dashboard'
 import Clients from './pages/Clients'
 import Accounts from './pages/Accounts'
@@ -36,8 +37,9 @@ export default function App() {
       <Toaster position="top-right" richColors />
       <Routes>
         {/* Public routes — no login required */}
-        <Route path="/login"   element={<LoginGuard />} />
-        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/login"          element={<LoginGuard />} />
+        <Route path="/privacy"        element={<Privacy />} />
+        <Route path="/data-deletion"  element={<DataDeletion />} />
 
         {/* Protected routes */}
         <Route element={<ProtectedRoutes />}>
