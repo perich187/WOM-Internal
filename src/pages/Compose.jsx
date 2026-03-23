@@ -5,7 +5,7 @@ import {
   Send, Save, Eye, Check, AlertCircle, Info, Loader2,
   X, Upload, Plus, MessageSquare,
 } from 'lucide-react'
-import { useClients, useSocialAccounts, useCreatePost, useUploadMedia, useDeleteMedia } from '@/lib/hooks'
+import { useClients, useSocialAccounts, useCreatePost, usePublishNow, useUploadMedia, useDeleteMedia } from '@/lib/hooks'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useProfile } from '@/lib/hooks'
 import { PLATFORMS, cn } from '@/lib/utils'
@@ -220,6 +220,7 @@ export default function Compose() {
   const { data: clients, isLoading: clientsLoading } = useClients()
   const { data: accounts } = useSocialAccounts(selectedClientId || undefined)
   const createPost    = useCreatePost()
+  const publishNow    = usePublishNow()
   const uploadMedia   = useUploadMedia()
   const deleteMedia   = useDeleteMedia()
 
@@ -278,29 +279,54 @@ export default function Compose() {
       return
     }
     try {
-      const status      = scheduleType === 'draft' ? 'draft' : scheduleType === 'now' ? 'published' : 'scheduled'
+      const mediaUrls = mediaItems.filter(m => m.url).map(m => m.url)
+      const fc        = showFirstComment && firstComment.trim() ? firstComment.trim() : null
+
+      // For "Publish Now" — save first, then trigger the publish API
+      if (scheduleType === 'now') {
+        const post = await createPost.mutateAsync({
+          clientId:      selectedClientId,
+          platforms:     selectedPlatforms,
+          content,
+          status:        'publishing',
+          scheduledAt:   null,
+          createdByName: profile?.full_name ?? user?.email ?? 'Unknown',
+          mediaUrls,
+          firstComment:  fc,
+        })
+        toast.loading('Publishing to platforms...')
+        const result = await publishNow.mutateAsync(post.id)
+        toast.dismiss()
+        const allFailed = Object.values(result.platformResults ?? {}).every(r => r.error)
+        if (allFailed) {
+          const firstError = Object.values(result.platformResults)[0]?.error
+          toast.error(`Publish failed: ${firstError}`)
+        } else {
+          toast.success('Post published!')
+          navigate('/calendar')
+        }
+        return
+      }
+
+      // For schedule / draft — just save to DB; cron handles scheduled posts
+      const status      = scheduleType === 'draft' ? 'draft' : 'scheduled'
       const scheduledAt = scheduleType === 'schedule' ? new Date(scheduleDate).toISOString() : null
-      const mediaUrls   = mediaItems.filter(m => m.url).map(m => m.url)
 
       await createPost.mutateAsync({
-        clientId:     selectedClientId,
-        platforms:    selectedPlatforms,
+        clientId:      selectedClientId,
+        platforms:     selectedPlatforms,
         content,
         status,
         scheduledAt,
         createdByName: profile?.full_name ?? user?.email ?? 'Unknown',
         mediaUrls,
-        firstComment: showFirstComment && firstComment.trim() ? firstComment.trim() : null,
+        firstComment:  fc,
       })
 
-      toast.success(
-        status === 'draft'     ? 'Draft saved!' :
-        status === 'published' ? 'Post published!' :
-        'Post scheduled!'
-      )
+      toast.success(status === 'draft' ? 'Draft saved!' : 'Post scheduled!')
       navigate('/calendar')
     } catch (err) {
-      toast.error('Failed to save post: ' + err.message)
+      toast.error('Failed: ' + err.message)
     }
   }
 
@@ -590,8 +616,8 @@ export default function Compose() {
 
               <div className="flex gap-3">
                 <button onClick={() => setStep(2)} className="btn-secondary">← Back</button>
-                <button onClick={handleSubmit} disabled={createPost.isPending || isUploading} className="btn-primary flex-1 justify-center">
-                  {createPost.isPending ? <Loader2 size={15} className="animate-spin" /> :
+                <button onClick={handleSubmit} disabled={createPost.isPending || publishNow.isPending || isUploading} className="btn-primary flex-1 justify-center">
+                  {(createPost.isPending || publishNow.isPending) ? <Loader2 size={15} className="animate-spin" /> :
                    scheduleType === 'now'      ? <><Send size={15} />    Publish Now</> :
                    scheduleType === 'schedule' ? <><CalIcon size={15} /> Schedule Post</> :
                                                  <><Save size={15} />    Save Draft</>}

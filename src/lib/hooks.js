@@ -207,6 +207,27 @@ export function useCreatePost() {
   })
 }
 
+export function usePublishNow() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (postId) => {
+      const appUrl     = import.meta.env.VITE_APP_URL ?? ''
+      const internalKey = import.meta.env.VITE_INTERNAL_API_KEY ?? ''
+      const res = await fetch(`${appUrl}/api/publish-post?postId=${postId}`, {
+        method:  'POST',
+        headers: { 'x-internal-key': internalKey },
+      })
+      const data = await res.json()
+      if (!data.ok) throw new Error(data.error ?? 'Publish failed')
+      return data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['social_posts'] })
+      qc.invalidateQueries({ queryKey: ['dashboard_stats'] })
+    },
+  })
+}
+
 export function useUpdatePost() {
   const qc = useQueryClient()
   return useMutation({
