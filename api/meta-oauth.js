@@ -99,9 +99,27 @@ export default async function handler(req, res) {
   )
   const pagesData = await pagesRes.json()
 
+  console.log('[meta-oauth] pages response:', JSON.stringify(pagesData))
+
   if (pagesData.error) {
+    console.error('[meta-oauth] pages error:', pagesData.error)
     return res.redirect(
       `/accounts?error=${encodeURIComponent(pagesData.error.message)}`
+    )
+  }
+
+  const pages = pagesData.data ?? []
+
+  if (pages.length === 0) {
+    // The Facebook user has no Pages they manage — common causes:
+    // 1. The logged-in Facebook account isn't an admin of any Page
+    // 2. App is in Development mode and the user isn't a test user
+    // 3. pages_show_list permission wasn't granted
+    console.warn('[meta-oauth] No Facebook Pages found for this user. pagesData:', JSON.stringify(pagesData))
+    return res.redirect(
+      `/accounts?error=${encodeURIComponent(
+        'No Facebook Pages found. Make sure you are an Admin of a Facebook Page and grant all requested permissions.'
+      )}`
     )
   }
 
@@ -113,7 +131,7 @@ export default async function handler(req, res) {
 
   const upserts = []
 
-  for (const page of (pagesData.data ?? [])) {
+  for (const page of pages) {
     // Facebook Page — page access tokens don't expire when generated
     // from a long-lived user token.
     upserts.push({
@@ -150,17 +168,22 @@ export default async function handler(req, res) {
   }
 
   // ── Step 5: Save to Supabase ──────────────────────────────────
+  console.log('[meta-oauth] upserting', upserts.length, 'records for clientId:', clientId)
+
   if (upserts.length > 0) {
-    const { error: dbError } = await supabase
+    const { data: upsertData, error: dbError } = await supabase
       .from('social_accounts')
       .upsert(upserts, { onConflict: 'client_id,platform' })
+      .select()
 
     if (dbError) {
-      console.error('[meta-oauth] supabase upsert error:', dbError)
+      console.error('[meta-oauth] supabase upsert error:', JSON.stringify(dbError))
       return res.redirect(
         `/accounts?error=${encodeURIComponent('Database error: ' + dbError.message)}`
       )
     }
+
+    console.log('[meta-oauth] upsert success, rows:', JSON.stringify(upsertData))
   }
 
   // ── Done — redirect back to app ───────────────────────────────
