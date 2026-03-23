@@ -8,12 +8,11 @@
  */
 
 const META_SCOPES = [
+  'pages_show_list',          // list Pages the user manages
   'pages_manage_posts',       // publish posts to Facebook Pages
   'pages_read_engagement',    // read Page insights/engagement
-  'pages_show_list',          // list Pages the user manages
   'instagram_basic',          // read Instagram account info
   'instagram_content_publish',// publish to Instagram
-  'instagram_manage_insights',// read Instagram analytics
 ].join(',')
 
 export function startMetaOAuth(clientId) {
