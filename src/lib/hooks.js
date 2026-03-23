@@ -92,6 +92,8 @@ export function useSocialAccounts(clientId) {
       if (error) throw error
       return data
     },
+    staleTime: 0,          // always consider stale so it refetches on mount
+    refetchOnMount: true,
   })
 }
 

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   CheckCircle2, XCircle, RefreshCw, Unlink,
   Lock, ChevronDown, ChevronUp, Loader2, Clock,
@@ -233,18 +234,22 @@ export default function Accounts() {
   const { data: clients,  isLoading: clientsLoading  } = useClients()
   const { data: accounts, isLoading: accountsLoading } = useSocialAccounts()
 
+  const qc = useQueryClient()
   const clientFilter    = searchParams.get('client')
   const filteredClients = clientFilter
     ? (clients ?? []).filter(c => c.id === clientFilter)
     : (clients ?? []).filter(c => c.status === 'Active')
 
-  // Handle OAuth callback result
+  // Handle OAuth callback — force refetch so connected status updates immediately
   useEffect(() => {
     const connected = searchParams.get('connected')
     const error     = searchParams.get('error')
     const count     = searchParams.get('count')
 
     if (connected === 'meta') {
+      // Invalidate cache so the new accounts load from Supabase right away
+      qc.invalidateQueries({ queryKey: ['social_accounts'] })
+      qc.invalidateQueries({ queryKey: ['clients'] })
       toast.success(`Meta connected! ${count} account(s) linked successfully.`)
       setSearchParams({})
     } else if (error) {
