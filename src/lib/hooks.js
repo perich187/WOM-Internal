@@ -134,6 +134,67 @@ export function useDisconnectAccount() {
   })
 }
 
+export function useMetaPendingSession(sessionId) {
+  return useQuery({
+    queryKey: ['meta_pending', sessionId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('meta_oauth_pending')
+        .select('*')
+        .eq('id', sessionId)
+        .single()
+      if (error) throw error
+      return data
+    },
+    enabled: !!sessionId,
+  })
+}
+
+export function useConfirmMetaPages() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ sessionId, clientId, selectedPages }) => {
+      // selectedPages: array of { fb_page_id, fb_page_name, fb_token, ig_user_id, ig_username, ig_followers }
+      const upserts = []
+      for (const page of selectedPages) {
+        upserts.push({
+          client_id:        clientId,
+          platform:         'facebook',
+          account_name:     page.fb_page_name,
+          platform_user_id: page.fb_page_id,
+          access_token:     page.fb_token,
+          connected:        true,
+          updated_at:       new Date().toISOString(),
+        })
+        if (page.ig_user_id) {
+          upserts.push({
+            client_id:        clientId,
+            platform:         'instagram',
+            username:         page.ig_username ?? null,
+            account_name:     page.ig_username ?? page.fb_page_name,
+            platform_user_id: page.ig_user_id,
+            followers:        page.ig_followers ?? 0,
+            access_token:     page.fb_token,
+            connected:        true,
+            updated_at:       new Date().toISOString(),
+          })
+        }
+      }
+      const { error: upsertErr } = await supabase
+        .from('social_accounts')
+        .upsert(upserts, { onConflict: 'client_id,platform' })
+      if (upsertErr) throw upsertErr
+      // Clean up pending session
+      await supabase.from('meta_oauth_pending').delete().eq('id', sessionId)
+      return upserts.length
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['social_accounts'] })
+      qc.invalidateQueries({ queryKey: ['meta_pending'] })
+    },
+  })
+}
+
 // ─── SOCIAL POSTS ─────────────────────────────────────────────────────────────
 
 export function useSocialPosts({ clientId, status } = {}) {

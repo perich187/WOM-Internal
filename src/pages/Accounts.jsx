@@ -3,13 +3,122 @@ import { useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   CheckCircle2, XCircle, RefreshCw, Unlink,
-  Lock, ChevronDown, ChevronUp, Loader2, Clock,
+  Lock, ChevronDown, ChevronUp, Loader2, Clock, Check,
 } from 'lucide-react'
-import { useClients, useSocialAccounts, useDisconnectAccount } from '@/lib/hooks'
+import { useClients, useSocialAccounts, useDisconnectAccount, useMetaPendingSession, useConfirmMetaPages } from '@/lib/hooks'
 import { PLATFORMS, formatNumber, cn } from '@/lib/utils'
 import PlatformIcon from '@/components/ui/PlatformIcon'
 import { startMetaOAuth, isMetaPlatform } from '@/lib/meta'
 import { toast } from 'sonner'
+
+// ─── Page selection modal ─────────────────────────────────────────────────────
+
+function PageSelectModal({ sessionId, clientId, clientName, onClose }) {
+  const { data: session, isLoading } = useMetaPendingSession(sessionId)
+  const confirmPages = useConfirmMetaPages()
+  const [selected, setSelected] = useState([])
+
+  const pages = session?.pages ?? []
+
+  useEffect(() => {
+    // Pre-select all by default
+    if (pages.length > 0 && selected.length === 0) {
+      setSelected(pages.map(p => p.fb_page_id))
+    }
+  }, [pages.length])
+
+  const toggle = (id) =>
+    setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+
+  const handleConfirm = async () => {
+    const chosenPages = pages.filter(p => selected.includes(p.fb_page_id))
+    if (chosenPages.length === 0) {
+      toast.error('Select at least one Page to connect.')
+      return
+    }
+    try {
+      const count = await confirmPages.mutateAsync({ sessionId, clientId, selectedPages: chosenPages })
+      toast.success(`${count} account(s) connected to ${clientName}!`)
+      onClose()
+    } catch (err) {
+      toast.error('Failed to save: ' + err.message)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 animate-fade-in">
+        <h2 className="font-semibold text-[#092137] text-lg mb-1">Select Pages to Connect</h2>
+        <p className="text-sm text-[#092137]/50 mb-5">
+          Choose which Facebook Page(s) and Instagram account(s) to link to <strong>{clientName}</strong>.
+        </p>
+
+        {isLoading ? (
+          <div className="flex items-center justify-center py-10 text-[#092137]/40 gap-2">
+            <Loader2 size={18} className="animate-spin" /> Loading pages...
+          </div>
+        ) : pages.length === 0 ? (
+          <p className="text-sm text-[#092137]/50 text-center py-6">No pages found in this session.</p>
+        ) : (
+          <div className="space-y-3 mb-6 max-h-72 overflow-y-auto">
+            {pages.map(page => {
+              const isSelected = selected.includes(page.fb_page_id)
+              return (
+                <button
+                  key={page.fb_page_id}
+                  onClick={() => toggle(page.fb_page_id)}
+                  className={cn(
+                    'w-full flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all',
+                    isSelected ? 'border-wom-gold bg-[#FEF8EC]' : 'border-[#EDE8DC] hover:border-gray-300'
+                  )}
+                >
+                  <div className={cn(
+                    'w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all',
+                    isSelected ? 'bg-wom-gold border-wom-gold' : 'border-[#EDE8DC]'
+                  )}>
+                    {isSelected && <Check size={11} className="text-[#092137]" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <PlatformIcon platform="facebook" size={16} />
+                      <span className="font-medium text-sm text-[#092137]">{page.fb_page_name}</span>
+                    </div>
+                    {page.ig_username ? (
+                      <div className="flex items-center gap-2">
+                        <PlatformIcon platform="instagram" size={14} />
+                        <span className="text-xs text-[#092137]/50">
+                          @{page.ig_username}
+                          {page.ig_followers ? ` · ${formatNumber(page.ig_followers)} followers` : ''}
+                        </span>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-[#092137]/30">No Instagram Business account linked to this Page</p>
+                    )}
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        )}
+
+        <div className="flex gap-3">
+          <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
+          <button
+            onClick={handleConfirm}
+            disabled={confirmPages.isPending || selected.length === 0}
+            className="btn-primary flex-1 justify-center disabled:opacity-40"
+          >
+            {confirmPages.isPending
+              ? <Loader2 size={14} className="animate-spin" />
+              : `Connect ${selected.length} Page${selected.length !== 1 ? 's' : ''}`
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 // ─── Connect button logic per platform ────────────────────────────────────────
 
@@ -236,23 +345,20 @@ export default function Accounts() {
 
   const qc = useQueryClient()
   const clientFilter    = searchParams.get('client')
+  const sessionId       = searchParams.get('session')
   const filteredClients = clientFilter
     ? (clients ?? []).filter(c => c.id === clientFilter)
     : (clients ?? []).filter(c => c.status === 'Active')
 
-  // Handle OAuth callback — force refetch so connected status updates immediately
-  useEffect(() => {
-    const connected = searchParams.get('connected')
-    const error     = searchParams.get('error')
-    const count     = searchParams.get('count')
+  // The client whose session we're selecting pages for
+  const sessionClient = sessionId && clientFilter
+    ? (clients ?? []).find(c => c.id === clientFilter)
+    : null
 
-    if (connected === 'meta') {
-      // Invalidate cache so the new accounts load from Supabase right away
-      qc.invalidateQueries({ queryKey: ['social_accounts'] })
-      qc.invalidateQueries({ queryKey: ['clients'] })
-      toast.success(`Meta connected! ${count} account(s) linked successfully.`)
-      setSearchParams({})
-    } else if (error) {
+  // Handle OAuth callback errors
+  useEffect(() => {
+    const error = searchParams.get('error')
+    if (error) {
       toast.error(`Connection failed: ${decodeURIComponent(error)}`)
       setSearchParams({})
     }
@@ -261,6 +367,15 @@ export default function Accounts() {
   const isLoading = clientsLoading || accountsLoading
 
   return (
+    <>
+    {sessionId && sessionClient && (
+      <PageSelectModal
+        sessionId={sessionId}
+        clientId={clientFilter}
+        clientName={sessionClient.client_name}
+        onClose={() => setSearchParams({})}
+      />
+    )}
     <div className="max-w-4xl mx-auto space-y-5">
 
       {/* Info banner */}
@@ -311,5 +426,6 @@ export default function Accounts() {
         </div>
       )}
     </div>
+    </>
   )
 }
