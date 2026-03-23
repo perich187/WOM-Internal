@@ -3,6 +3,7 @@ import { Toaster } from 'sonner'
 import { useAuth } from './components/auth/AuthProvider'
 import Layout from './components/layout/Layout'
 import Login from './pages/Login'
+import Privacy from './pages/Privacy'
 import Dashboard from './pages/Dashboard'
 import Clients from './pages/Clients'
 import Accounts from './pages/Accounts'
@@ -34,16 +35,20 @@ export default function App() {
     <BrowserRouter>
       <Toaster position="top-right" richColors />
       <Routes>
-        <Route path="/login" element={<LoginGuard />} />
+        {/* Public routes — no login required */}
+        <Route path="/login"   element={<LoginGuard />} />
+        <Route path="/privacy" element={<Privacy />} />
+
+        {/* Protected routes */}
         <Route element={<ProtectedRoutes />}>
           <Route index element={<Dashboard />} />
-          <Route path="clients" element={<Clients />} />
-          <Route path="accounts" element={<Accounts />} />
-          <Route path="calendar" element={<Calendar />} />
-          <Route path="compose" element={<Compose />} />
+          <Route path="clients"   element={<Clients />} />
+          <Route path="accounts"  element={<Accounts />} />
+          <Route path="calendar"  element={<Calendar />} />
+          <Route path="compose"   element={<Compose />} />
           <Route path="analytics" element={<Analytics />} />
-          <Route path="settings" element={<Settings />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="settings"  element={<Settings />} />
+          <Route path="*"         element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
     </BrowserRouter>
