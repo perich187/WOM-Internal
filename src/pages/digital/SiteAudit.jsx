@@ -756,7 +756,7 @@ export default function SiteAudit() {
     try {
       // Step 1: Start — discover URLs
       const startRes = await fetch(
-        `/api/site-audit-start?url=${encodeURIComponent(url)}${clientId ? `&clientId=${clientId}` : ''}`,
+        `/api/site-audit-job?action=start&url=${encodeURIComponent(url)}${clientId ? `&clientId=${clientId}` : ''}`,
         { method: 'POST' }
       )
       if (!startRes.ok) {
