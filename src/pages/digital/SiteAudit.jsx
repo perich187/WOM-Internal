@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
-  ClipboardCheck, Globe, Loader2, AlertCircle, RefreshCw, ChevronDown, ChevronUp,
+  ClipboardCheck, Globe, Loader2, AlertCircle, RefreshCw, X, ChevronDown, ChevronUp, ExternalLink,
 } from 'lucide-react'
 import {
   PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -8,8 +8,10 @@ import {
 import { useDigitalClient } from '@/lib/digitalClient'
 
 // ---------------------------------------------------------------------------
-// Severity helpers
+// Constants
 // ---------------------------------------------------------------------------
+
+const BATCH_SIZE = 5
 
 const SEV_ORDER = { critical: 0, error: 1, warning: 2, passed: 3 }
 
@@ -27,10 +29,7 @@ const SEV_BADGE = {
 function ScoreRing({ score, size = 140, strokeWidth = 14, label }) {
   const colour = score >= 80 ? '#10B981' : score >= 60 ? '#F59E0B' : '#EF4444'
   const scoreLabel = score >= 80 ? 'Healthy' : score >= 60 ? 'Needs Work' : 'Critical'
-  const data = [
-    { value: score },
-    { value: 100 - score },
-  ]
+  const data = [{ value: score }, { value: 100 - score }]
   return (
     <div className="flex flex-col items-center gap-1">
       <div className="relative" style={{ width: size, height: size }}>
@@ -140,73 +139,554 @@ function DepthChart({ data }) {
 }
 
 // ---------------------------------------------------------------------------
+// Detail panel — column definitions per test
+// ---------------------------------------------------------------------------
+
+function StatusBadge({ code }) {
+  const c = code >= 500 ? { bg: '#7F1D1D', text: '#FEE2E2' }
+    : code >= 400 ? { bg: '#EF4444', text: '#fff' }
+    : code >= 300 ? { bg: '#F59E0B', text: '#fff' }
+    : { bg: '#10B981', text: '#fff' }
+  return (
+    <span
+      className="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+      style={{ backgroundColor: c.bg, color: c.text }}
+    >
+      {code}
+    </span>
+  )
+}
+
+function TypeBadge({ type }) {
+  const styles = {
+    image:  { bg: '#DBEAFE', text: '#1E40AF' },
+    css:    { bg: '#EDE9FE', text: '#5B21B6' },
+    js:     { bg: '#FEF3C7', text: '#92400E' },
+  }
+  const s = styles[type] || { bg: '#F3F4F6', text: '#374151' }
+  return (
+    <span
+      className="inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+      style={{ backgroundColor: s.bg, color: s.text }}
+    >
+      {type}
+    </span>
+  )
+}
+
+function TruncUrl({ url, maxLen = 50 }) {
+  if (!url) return <span className="text-[#092137]/40">—</span>
+  const display = url.length > maxLen ? url.slice(0, maxLen) + '…' : url
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={url}
+      className="text-blue-600 hover:underline flex items-center gap-1 min-w-0"
+    >
+      <span className="truncate">{display}</span>
+      <ExternalLink size={10} className="flex-shrink-0 opacity-50" />
+    </a>
+  )
+}
+
+function RelPath({ url }) {
+  let path = url
+  try { path = new URL(url).pathname || '/' } catch {}
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={url}
+      className="text-blue-600 hover:underline text-xs"
+    >
+      {path}
+    </a>
+  )
+}
+
+function DetailsTable({ test }) {
+  const { id, details } = test
+  if (!details || details.length === 0) {
+    return <p className="text-xs text-[#092137]/40 py-4 text-center">No details available.</p>
+  }
+
+  const thClass = "text-[10px] font-semibold text-[#092137]/40 uppercase tracking-wide py-2 px-3 text-left bg-[#F5F1E9]/60"
+  const tdClass = "text-xs text-[#092137]/80 py-2.5 px-3 align-top"
+
+  // --- broken_resources ---
+  if (id === 'broken_resources') {
+    return (
+      <table className="w-full border-collapse">
+        <thead>
+          <tr>
+            <th className={thClass}>Resource URL</th>
+            <th className={thClass}>Type</th>
+            <th className={thClass}>Status</th>
+            <th className={thClass}>Found on</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-[#EDE8DC]">
+          {details.map((d, i) => (
+            <tr key={i}>
+              <td className={tdClass}><TruncUrl url={d.resourceUrl} /></td>
+              <td className={tdClass}><TypeBadge type={d.type} /></td>
+              <td className={tdClass}><StatusBadge code={d.statusCode} /></td>
+              <td className={tdClass}><RelPath url={d.foundOnPage} /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )
+  }
+
+  // --- broken_links ---
+  if (id === 'broken_links') {
+    return (
+      <table className="w-full border-collapse">
+        <thead>
+          <tr>
+            <th className={thClass}>Link URL</th>
+            <th className={thClass}>Found on Page</th>
+            <th className={thClass}>Status</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-[#EDE8DC]">
+          {details.map((d, i) => (
+            <tr key={i}>
+              <td className={tdClass}><TruncUrl url={d.linkUrl} /></td>
+              <td className={tdClass}><RelPath url={d.foundOnPage} /></td>
+              <td className={tdClass}><StatusBadge code={d.statusCode} /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )
+  }
+
+  // --- 4xx_errors / 5xx_errors ---
+  if (id === '4xx_errors' || id === '5xx_errors') {
+    return (
+      <table className="w-full border-collapse">
+        <thead>
+          <tr>
+            <th className={thClass}>Page URL</th>
+            <th className={thClass}>Status</th>
+            <th className={thClass}>Linked From</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-[#EDE8DC]">
+          {details.map((d, i) => (
+            <tr key={i}>
+              <td className={tdClass}><RelPath url={d.pageUrl} /></td>
+              <td className={tdClass}><StatusBadge code={d.statusCode} /></td>
+              <td className={tdClass}>{d.linkedFrom ? <RelPath url={d.linkedFrom} /> : <span className="text-[#092137]/30">—</span>}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )
+  }
+
+  // --- duplicate_titles / duplicate_descriptions ---
+  if (id === 'duplicate_titles' || id === 'duplicate_descriptions') {
+    const valueLabel = id === 'duplicate_titles' ? 'Title' : 'Description'
+    return (
+      <table className="w-full border-collapse">
+        <thead>
+          <tr>
+            <th className={thClass}>{valueLabel}</th>
+            <th className={thClass}>Pages Affected</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-[#EDE8DC]">
+          {details.map((d, i) => {
+            const value = d.title || d.description || ''
+            return (
+              <tr key={i}>
+                <td className={tdClass}>
+                  <span className="block max-w-xs truncate" title={value}>{value || '—'}</span>
+                </td>
+                <td className={tdClass}>
+                  <div className="flex flex-col gap-0.5">
+                    {(d.pages || []).map((u, j) => <RelPath key={j} url={u} />)}
+                  </div>
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    )
+  }
+
+  // --- missing_meta_description / missing_title / missing_h1 ---
+  if (id === 'missing_meta_description' || id === 'missing_title' || id === 'missing_h1') {
+    return (
+      <table className="w-full border-collapse">
+        <thead>
+          <tr>
+            <th className={thClass}>Page URL</th>
+            <th className={thClass}>Title</th>
+            <th className={thClass}>Word Count</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-[#EDE8DC]">
+          {details.map((d, i) => (
+            <tr key={i}>
+              <td className={tdClass}><RelPath url={d.pageUrl} /></td>
+              <td className={tdClass}>
+                <span className="block max-w-xs truncate" title={d.title}>{d.title || '—'}</span>
+              </td>
+              <td className={tdClass}>{d.wordCount ?? '—'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )
+  }
+
+  // --- long_title / short_title ---
+  if (id === 'long_title' || id === 'short_title') {
+    return (
+      <table className="w-full border-collapse">
+        <thead>
+          <tr>
+            <th className={thClass}>Page URL</th>
+            <th className={thClass}>Title</th>
+            <th className={thClass}>Length</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-[#EDE8DC]">
+          {details.map((d, i) => (
+            <tr key={i}>
+              <td className={tdClass}><RelPath url={d.pageUrl} /></td>
+              <td className={tdClass}>
+                <span className="block max-w-xs truncate" title={d.title}>{d.title || '—'}</span>
+              </td>
+              <td className={tdClass}>{d.length}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )
+  }
+
+  // --- missing_alt ---
+  if (id === 'missing_alt') {
+    return (
+      <table className="w-full border-collapse">
+        <thead>
+          <tr>
+            <th className={thClass}>Page URL</th>
+            <th className={thClass}>Images Without Alt</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-[#EDE8DC]">
+          {details.map((d, i) => (
+            <tr key={i}>
+              <td className={tdClass}><RelPath url={d.pageUrl} /></td>
+              <td className={tdClass}>{d.imagesWithoutAlt ?? '—'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )
+  }
+
+  // --- slow_page_load / high_waiting_time ---
+  if (id === 'slow_page_load' || id === 'high_waiting_time') {
+    return (
+      <table className="w-full border-collapse">
+        <thead>
+          <tr>
+            <th className={thClass}>Page URL</th>
+            <th className={thClass}>Response Time</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-[#EDE8DC]">
+          {details.map((d, i) => (
+            <tr key={i}>
+              <td className={tdClass}><RelPath url={d.pageUrl} /></td>
+              <td className={tdClass}>{d.responseTime}ms</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )
+  }
+
+  // --- orphan_pages ---
+  if (id === 'orphan_pages') {
+    return (
+      <table className="w-full border-collapse">
+        <thead>
+          <tr>
+            <th className={thClass}>Page URL</th>
+            <th className={thClass}>Title</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-[#EDE8DC]">
+          {details.map((d, i) => (
+            <tr key={i}>
+              <td className={tdClass}><RelPath url={d.pageUrl} /></td>
+              <td className={tdClass}>
+                <span className="block max-w-xs truncate" title={d.title}>{d.title || '—'}</span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )
+  }
+
+  // --- redirect_chain ---
+  if (id === 'redirect_chain') {
+    return (
+      <table className="w-full border-collapse">
+        <thead>
+          <tr>
+            <th className={thClass}>Page URL</th>
+            <th className={thClass}>Redirect Count</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-[#EDE8DC]">
+          {details.map((d, i) => (
+            <tr key={i}>
+              <td className={tdClass}><RelPath url={d.pageUrl} /></td>
+              <td className={tdClass}>{d.redirectCount}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )
+  }
+
+  // --- deprecated_html ---
+  if (id === 'deprecated_html') {
+    return (
+      <table className="w-full border-collapse">
+        <thead>
+          <tr>
+            <th className={thClass}>Page URL</th>
+            <th className={thClass}>Tags Found</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-[#EDE8DC]">
+          {details.map((d, i) => (
+            <tr key={i}>
+              <td className={tdClass}><RelPath url={d.pageUrl} /></td>
+              <td className={tdClass}>
+                <div className="flex flex-wrap gap-1">
+                  {(d.tags || []).map((t, j) => (
+                    <code key={j} className="text-[10px] bg-[#F5F1E9] border border-[#EDE8DC] px-1.5 py-0.5 rounded">
+                      &lt;{t}&gt;
+                    </code>
+                  ))}
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )
+  }
+
+  // --- seo_unfriendly_url ---
+  if (id === 'seo_unfriendly_url') {
+    return (
+      <table className="w-full border-collapse">
+        <thead>
+          <tr>
+            <th className={thClass}>Page URL</th>
+            <th className={thClass}>Issue</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-[#EDE8DC]">
+          {details.map((d, i) => (
+            <tr key={i}>
+              <td className={tdClass}><RelPath url={d.pageUrl} /></td>
+              <td className={tdClass}>{d.issue}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )
+  }
+
+  // --- meta_robots_blocking ---
+  if (id === 'meta_robots_blocking') {
+    return (
+      <table className="w-full border-collapse">
+        <thead>
+          <tr>
+            <th className={thClass}>Page URL</th>
+            <th className={thClass}>Robots Value</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-[#EDE8DC]">
+          {details.map((d, i) => (
+            <tr key={i}>
+              <td className={tdClass}><RelPath url={d.pageUrl} /></td>
+              <td className={tdClass}><code className="text-xs bg-amber-50 px-1.5 py-0.5 rounded">{d.robots}</code></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )
+  }
+
+  // --- Default: page URL only ---
+  return (
+    <table className="w-full border-collapse">
+      <thead>
+        <tr>
+          <th className={thClass}>Page URL</th>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-[#EDE8DC]">
+        {details.map((d, i) => (
+          <tr key={i}>
+            <td className={tdClass}><RelPath url={d.pageUrl} /></td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Detail slide panel
+// ---------------------------------------------------------------------------
+
+function DetailPanel({ test, onClose }) {
+  const badge = SEV_BADGE[test?.severity] || SEV_BADGE.passed
+  const panelRef = useRef(null)
+
+  // Close on Escape
+  useEffect(() => {
+    function onKeyDown(e) {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [onClose])
+
+  if (!test) return null
+
+  return (
+    <>
+      {/* Overlay */}
+      <div
+        className="fixed inset-0 bg-black/40 z-40"
+        onClick={onClose}
+      />
+
+      {/* Panel */}
+      <div
+        ref={panelRef}
+        className="fixed top-0 right-0 h-full w-[480px] max-w-[90vw] bg-white shadow-xl z-50 flex flex-col"
+        style={{ animation: 'slideInRight 0.2s ease-out' }}
+      >
+        {/* Panel header */}
+        <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-[#EDE8DC] flex-shrink-0">
+          <div className="min-w-0">
+            <p className="text-[10px] font-semibold text-[#092137]/40 uppercase tracking-wide mb-0.5">Test Details</p>
+            <h2 className="text-sm font-bold text-[#092137] leading-snug">{test.label}</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="flex-shrink-0 p-1.5 rounded-lg hover:bg-[#F5F1E9] transition-colors text-[#092137]/40 hover:text-[#092137]"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Panel body */}
+        <div className="flex-1 overflow-y-auto">
+          {/* Summary card */}
+          <div className="px-5 pt-4 pb-3">
+            <div
+              className="rounded-xl px-4 py-3 flex items-center gap-4"
+              style={{ backgroundColor: badge.bg + '18' }}
+            >
+              <div>
+                <p className="text-3xl font-bold" style={{ color: badge.bg }}>
+                  {test.failures > 0 ? test.failures : '0'}
+                </p>
+                <p className="text-xs font-semibold mt-0.5" style={{ color: badge.bg }}>
+                  {badge.label}
+                </p>
+              </div>
+              <p className="text-xs text-[#092137]/60 leading-relaxed flex-1">{test.description}</p>
+            </div>
+          </div>
+
+          {/* Row count */}
+          {test.details && test.details.length > 0 && (
+            <p className="text-[10px] font-semibold text-[#092137]/40 uppercase tracking-wide px-5 pb-2">
+              Showing {test.details.length} of {test.details.length} rows
+            </p>
+          )}
+
+          {/* Details table */}
+          <div className="overflow-x-auto">
+            <DetailsTable test={test} />
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes slideInRight {
+          from { transform: translateX(100%); }
+          to { transform: translateX(0); }
+        }
+      `}</style>
+    </>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Tests table row
 // ---------------------------------------------------------------------------
 
-function TestRow({ test }) {
-  const [open, setOpen] = useState(false)
+function TestRow({ test, onOpen }) {
   const badge = SEV_BADGE[test.severity]
 
   return (
-    <div className="border-b border-[#EDE8DC] last:border-0">
-      <button
-        onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center gap-4 px-5 py-3.5 text-left hover:bg-[#F5F1E9]/60 transition-colors"
+    <button
+      onClick={() => onOpen(test)}
+      className="w-full flex items-center gap-4 px-5 py-3.5 text-left hover:bg-[#F5F1E9]/60 transition-colors border-b border-[#EDE8DC] last:border-0"
+    >
+      <span className="flex-1 text-sm font-medium text-[#092137] min-w-0 truncate">{test.label}</span>
+      <span
+        className="text-white text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0"
+        style={{ backgroundColor: badge.bg }}
       >
-        {/* Test name */}
-        <span className="flex-1 text-sm font-medium text-[#092137] min-w-0 truncate">{test.label}</span>
+        {badge.label}
+      </span>
+      <span className="text-sm font-semibold text-[#092137] w-14 text-right flex-shrink-0">
+        {test.failures > 0 ? test.failures : '—'}
+      </span>
+      <ChevronDown size={14} className="text-[#092137]/30 flex-shrink-0" />
+    </button>
+  )
+}
 
-        {/* Badge */}
-        <span
-          className="text-white text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0"
-          style={{ backgroundColor: badge.bg }}
-        >
-          {badge.label}
-        </span>
+// ---------------------------------------------------------------------------
+// Progress bar component
+// ---------------------------------------------------------------------------
 
-        {/* Failures count */}
-        <span className="text-sm font-semibold text-[#092137] w-14 text-right flex-shrink-0">
-          {test.failures > 0 ? test.failures : '—'}
-        </span>
-
-        {/* Expand icon */}
-        <span className="text-[#092137]/30 flex-shrink-0">
-          {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-        </span>
-      </button>
-
-      {open && (
-        <div className="px-5 pb-4 space-y-2.5 bg-[#F5F1E9]/40">
-          <p className="text-xs text-[#092137]/60 leading-relaxed">{test.description}</p>
-          {test.affectedUrls.length > 0 && (
-            <div className="space-y-1">
-              <p className="text-[10px] font-semibold text-[#092137]/40 uppercase tracking-wide">Affected Pages</p>
-              <div className="flex flex-wrap gap-1.5">
-                {test.affectedUrls.map((u, i) => {
-                  let relative
-                  try {
-                    relative = new URL(u).pathname || '/'
-                  } catch {
-                    relative = u
-                  }
-                  return (
-                    <a
-                      key={i}
-                      href={u}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs bg-white border border-[#EDE8DC] text-[#092137]/60 px-2 py-0.5 rounded-md hover:text-[#092137] hover:border-[#092137]/30 transition-colors max-w-xs truncate"
-                      title={u}
-                    >
-                      {relative}
-                    </a>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+function ProgressBar({ value, max }) {
+  const pct = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0
+  return (
+    <div className="w-full bg-[#EDE8DC] rounded-full h-2.5 overflow-hidden">
+      <div
+        className="h-full rounded-full transition-all duration-300"
+        style={{ width: `${pct}%`, backgroundColor: '#EF4444' }}
+      />
     </div>
   )
 }
@@ -218,9 +698,25 @@ function TestRow({ test }) {
 export default function SiteAudit() {
   const { selectedClient } = useDigitalClient()
   const [domain, setDomain] = useState('')
-  const [loading, setLoading] = useState(false)
+
+  // Phase: 'idle' | 'starting' | 'crawling' | 'finalizing' | 'complete' | 'error'
+  const [phase, setPhase] = useState('idle')
   const [error, setError] = useState(null)
   const [result, setResult] = useState(null)
+
+  // Crawl progress
+  const [jobId, setJobId] = useState(null)
+  const [totalUrls, setTotalUrls] = useState(0)
+  const [crawledCount, setCrawledCount] = useState(0)
+  const [currentPage, setCurrentPage] = useState('')
+  const [liveErrors, setLiveErrors] = useState(0)
+  const [liveWarnings, setLiveWarnings] = useState(0)
+
+  // Side panel
+  const [panelTest, setPanelTest] = useState(null)
+
+  // Cancel flag
+  const cancelRef = useRef(false)
 
   useEffect(() => {
     if (selectedClient?.website) {
@@ -228,29 +724,110 @@ export default function SiteAudit() {
     } else {
       setDomain('')
     }
+    resetState()
+  }, [selectedClient?.id])
+
+  function resetState() {
     setResult(null)
     setError(null)
-  }, [selectedClient?.id])
+    setPhase('idle')
+    setJobId(null)
+    setTotalUrls(0)
+    setCrawledCount(0)
+    setCurrentPage('')
+    setLiveErrors(0)
+    setLiveWarnings(0)
+    cancelRef.current = false
+  }
+
+  // Derive live error/warning counts from crawled pages (rough heuristic during crawl)
+  // We do this by checking page status codes in finalize; during crawl we don't have this info directly.
+  // We'll just show 0 during crawl and actual counts after finalize.
 
   async function runAudit() {
     if (!domain) return
-    setLoading(true)
-    setError(null)
-    setResult(null)
+    cancelRef.current = false
+    resetState()
+    setPhase('starting')
+
+    const url = domain.startsWith('http') ? domain : `https://${domain}`
+    const clientId = selectedClient?.id || ''
+
     try {
-      const url = domain.startsWith('http') ? domain : `https://${domain}`
-      const res = await fetch(`/api/site-audit?url=${encodeURIComponent(url)}`)
-      const data = await res.json()
-      if (data.error) throw new Error(data.error)
-      setResult(data)
+      // Step 1: Start — discover URLs
+      const startRes = await fetch(
+        `/api/site-audit-start?url=${encodeURIComponent(url)}${clientId ? `&clientId=${clientId}` : ''}`,
+        { method: 'POST' }
+      )
+      if (!startRes.ok) {
+        const d = await startRes.json().catch(() => ({}))
+        throw new Error(d.error || `Start failed (${startRes.status})`)
+      }
+      const startData = await startRes.json()
+      const { jobId: jid, urls } = startData
+
+      if (cancelRef.current) return
+
+      setJobId(jid)
+      setTotalUrls(urls.length)
+      setPhase('crawling')
+
+      // Step 2: Crawl in batches of BATCH_SIZE
+      // Assign depths: first URL = 0, rest = 1
+      const depths = urls.map((_, i) => (i === 0 ? 0 : 1))
+
+      let crawled = 0
+      for (let i = 0; i < urls.length; i += BATCH_SIZE) {
+        if (cancelRef.current) return
+
+        const batch = urls.slice(i, i + BATCH_SIZE)
+        const batchDepths = depths.slice(i, i + BATCH_SIZE)
+
+        setCurrentPage(batch[batch.length - 1])
+
+        const crawlRes = await fetch('/api/site-audit-crawl', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jobId: jid, urls: batch, depths: batchDepths }),
+        })
+
+        if (!crawlRes.ok) {
+          const d = await crawlRes.json().catch(() => ({}))
+          throw new Error(d.error || `Crawl batch failed (${crawlRes.status})`)
+        }
+
+        crawled += batch.length
+        setCrawledCount(crawled)
+      }
+
+      if (cancelRef.current) return
+
+      // Step 3: Finalize
+      setPhase('finalizing')
+      const finalRes = await fetch(`/api/site-audit-finalize?jobId=${jid}`, { method: 'POST' })
+      if (!finalRes.ok) {
+        const d = await finalRes.json().catch(() => ({}))
+        throw new Error(d.error || `Finalize failed (${finalRes.status})`)
+      }
+      const finalData = await finalRes.json()
+
+      if (cancelRef.current) return
+
+      setResult(finalData)
+      setPhase('complete')
     } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
+      if (!cancelRef.current) {
+        setError(err.message)
+        setPhase('error')
+      }
     }
   }
 
-  // Sort tests: critical → error → warning → passed
+  function cancelAudit() {
+    cancelRef.current = true
+    resetState()
+  }
+
   const sortedTests = result?.tests
     ? [...result.tests].sort((a, b) => {
         const ao = SEV_ORDER[a.severity] ?? 99
@@ -259,6 +836,11 @@ export default function SiteAudit() {
         return b.failures - a.failures
       })
     : []
+
+  const isRunning = phase === 'starting' || phase === 'crawling' || phase === 'finalizing'
+
+  // Progress percentage
+  const progressPct = totalUrls > 0 ? Math.round((crawledCount / totalUrls) * 100) : 0
 
   return (
     <div className="max-w-5xl mx-auto space-y-5">
@@ -280,44 +862,93 @@ export default function SiteAudit() {
             <input
               value={domain}
               onChange={e => setDomain(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && runAudit()}
+              onKeyDown={e => e.key === 'Enter' && !isRunning && runAudit()}
               placeholder="Enter domain to audit (e.g. example.com.au)"
               className="w-full pl-9 pr-4 py-2.5 text-sm border border-[#EDE8DC] rounded-xl focus:outline-none focus:ring-2 focus:ring-red-300 focus:border-red-400"
+              disabled={isRunning}
             />
           </div>
           <button
             onClick={runAudit}
-            disabled={loading || !domain}
+            disabled={isRunning || !domain}
             className="px-5 py-2.5 bg-red-500 text-white text-sm font-medium rounded-xl hover:bg-red-600 transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? <Loader2 size={15} className="animate-spin" /> : <ClipboardCheck size={15} />}
-            {loading ? 'Auditing…' : 'Audit'}
+            {isRunning ? <Loader2 size={15} className="animate-spin" /> : <ClipboardCheck size={15} />}
+            {isRunning ? 'Auditing…' : 'Audit'}
           </button>
         </div>
         <p className="text-xs text-[#092137]/40 mt-2 ml-1">
-          Crawls up to 20 pages — runs 51 SEO checks across titles, meta, H1s, canonicals, redirects, structured data and more
+          Crawls up to 150 pages — runs 51 SEO checks across titles, meta, H1s, canonicals, redirects, structured data and more
         </p>
       </div>
 
       {/* Error */}
-      {error && (
+      {phase === 'error' && error && (
         <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-start gap-2 text-sm text-red-700">
           <AlertCircle size={15} className="flex-shrink-0 mt-0.5" />
           {error}
         </div>
       )}
 
-      {/* Loading state */}
-      {loading && (
-        <div className="bg-white rounded-xl border border-[#EDE8DC] p-14 text-center space-y-3">
+      {/* Starting state */}
+      {phase === 'starting' && (
+        <div className="bg-white rounded-xl border border-[#EDE8DC] p-10 text-center space-y-3">
           <Loader2 size={32} className="mx-auto text-red-400 animate-spin" />
-          <p className="text-sm font-semibold text-[#092137]">Crawling site…</p>
-          <p className="text-xs text-[#092137]/40">Auditing up to 20 pages for 51 SEO tests — this may take 30–60 seconds</p>
+          <p className="text-sm font-semibold text-[#092137]">Discovering pages…</p>
+          <p className="text-xs text-[#092137]/40">Fetching homepage and extracting all internal links</p>
+        </div>
+      )}
+
+      {/* Crawling / finalizing progress */}
+      {(phase === 'crawling' || phase === 'finalizing') && (
+        <div className="bg-white rounded-xl border border-[#EDE8DC] p-8 space-y-5">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-base font-bold text-[#092137]">
+                {phase === 'finalizing' ? 'Analysing results…' : 'Crawling site…'}
+              </p>
+              {phase === 'crawling' && (
+                <p className="text-xs text-[#092137]/40 mt-1 truncate max-w-sm" title={currentPage}>
+                  Analysing page: {(() => {
+                    try { return new URL(currentPage).pathname || '/' } catch { return currentPage }
+                  })()}
+                </p>
+              )}
+              {phase === 'finalizing' && (
+                <p className="text-xs text-[#092137]/40 mt-1">Running 51 SEO tests across {crawledCount} pages…</p>
+              )}
+            </div>
+            <button
+              onClick={cancelAudit}
+              className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#EDE8DC] text-xs text-[#092137]/50 hover:bg-[#F5F1E9] hover:text-[#092137] transition-colors"
+            >
+              <X size={12} /> Cancel
+            </button>
+          </div>
+
+          {phase === 'crawling' && (
+            <>
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs text-[#092137]/50">
+                  <span>{crawledCount} of {totalUrls} pages</span>
+                  <span>{progressPct}%</span>
+                </div>
+                <ProgressBar value={crawledCount} max={totalUrls} />
+              </div>
+            </>
+          )}
+
+          {phase === 'finalizing' && (
+            <div className="flex items-center gap-3">
+              <Loader2 size={20} className="text-red-400 animate-spin flex-shrink-0" />
+              <p className="text-sm text-[#092137]/60">Running cross-page analysis…</p>
+            </div>
+          )}
         </div>
       )}
 
       {/* Empty state */}
-      {!result && !loading && !error && (
+      {phase === 'idle' && (
         <div className="bg-white rounded-xl border border-[#EDE8DC] p-14 text-center">
           <ClipboardCheck size={32} className="mx-auto text-red-400 mb-3" />
           <p className="text-sm font-semibold text-[#092137]">Enter a domain and click Audit</p>
@@ -330,7 +961,7 @@ export default function SiteAudit() {
       )}
 
       {/* Results */}
-      {result && !loading && (
+      {phase === 'complete' && result && (
         <>
           {/* Summary header */}
           <div className="bg-white rounded-xl border border-[#EDE8DC] p-6">
@@ -409,18 +1040,15 @@ export default function SiteAudit() {
 
           {/* Tests table */}
           <div className="bg-white rounded-xl border border-[#EDE8DC] overflow-hidden">
-            {/* Table header */}
             <div className="flex items-center gap-4 px-5 py-3 border-b border-[#EDE8DC] bg-[#F5F1E9]/60">
               <span className="flex-1 text-xs font-semibold text-[#092137]/50 uppercase tracking-wide">Test</span>
               <span className="text-xs font-semibold text-[#092137]/50 uppercase tracking-wide flex-shrink-0 w-20 text-center">Type</span>
               <span className="text-xs font-semibold text-[#092137]/50 uppercase tracking-wide flex-shrink-0 w-14 text-right">Failures</span>
               <span className="w-4 flex-shrink-0" />
             </div>
-
-            {/* Rows */}
             <div>
               {sortedTests.map(test => (
-                <TestRow key={test.id} test={test} />
+                <TestRow key={test.id} test={test} onOpen={setPanelTest} />
               ))}
             </div>
           </div>
@@ -437,7 +1065,7 @@ export default function SiteAudit() {
                   : p.statusCode >= 400 ? '#EF4444'
                   : '#F59E0B'
                 let relPath = p.url
-                try { relPath = new URL(p.url).pathname || '/' } catch { /* keep url */ }
+                try { relPath = new URL(p.url).pathname || '/' } catch {}
                 return (
                   <div key={i} className="flex items-center gap-3 px-5 py-2.5 text-sm">
                     <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: statusColour }} />
@@ -456,6 +1084,11 @@ export default function SiteAudit() {
             </div>
           </div>
         </>
+      )}
+
+      {/* Detail side panel */}
+      {panelTest && (
+        <DetailPanel test={panelTest} onClose={() => setPanelTest(null)} />
       )}
     </div>
   )
