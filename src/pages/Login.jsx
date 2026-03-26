@@ -4,10 +4,11 @@ import { supabase } from '@/lib/supabase'
 import WOMLogoMark from '@/components/ui/WOMLogoMark'
 
 const FEATURES = [
-  'Schedule posts across Instagram, Facebook, TikTok, LinkedIn & more',
-  'Manage all client social accounts in one place',
-  'Content calendar with drag-and-drop scheduling',
-  'Analytics and performance reporting',
+  { heading: 'Client Management',       desc: 'Manage all clients, contacts, projects, and service records in one place.' },
+  { heading: 'Social Media Publishing', desc: 'Schedule and publish content across Facebook, Instagram, and more.' },
+  { heading: 'Live Reporting',          desc: 'Pull real-time data from Google Analytics, Search Console, and Meta.' },
+  { heading: 'Digital Marketing',       desc: 'SEO tools, rank tracking, site speed audits, and AI overview insights.' },
+  { heading: 'Performance Dashboards',  desc: 'Content calendar, report builder, and agency-wide analytics.' },
 ]
 
 export default function Login() {
@@ -47,29 +48,36 @@ export default function Login() {
         <div className="relative z-10 space-y-6 max-w-md">
           <div>
             <p style={{ color: '#F0A629', fontFamily: "'Space Grotesk', sans-serif", fontSize: 12, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 16 }}>
-              Internal Staff Portal
+              WOM Internal App · Staff Portal
             </p>
-            <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 38, lineHeight: 1.15, color: '#F5F1E9' }}>
-              Your agency's social media command centre.
+            <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 36, lineHeight: 1.15, color: '#F5F1E9' }}>
+              The internal operations hub for Word Of Mouth Agency.
             </h2>
           </div>
           <p style={{ color: 'rgba(245,241,233,0.55)', fontSize: 15, lineHeight: 1.65 }}>
-            Schedule, manage and report on social media for all your clients — all from one beautifully simple dashboard.
+            WOM Internal App is the central platform used by our team every day — managing clients, publishing social media, tracking rankings, and reporting on performance across all accounts.
           </p>
-          <ul className="space-y-3">
+          <ul className="space-y-4">
             {FEATURES.map(f => (
-              <li key={f} className="flex items-start gap-3">
-                <CheckCircle2 size={17} style={{ color: '#F0A629', flexShrink: 0, marginTop: 2 }} />
-                <span style={{ color: 'rgba(245,241,233,0.65)', fontSize: 13.5, lineHeight: 1.5 }}>{f}</span>
+              <li key={f.heading} className="flex items-start gap-3">
+                <CheckCircle2 size={17} style={{ color: '#F0A629', flexShrink: 0, marginTop: 3 }} />
+                <span style={{ color: 'rgba(245,241,233,0.65)', fontSize: 13.5, lineHeight: 1.5 }}>
+                  <strong style={{ color: '#F5F1E9', fontWeight: 600 }}>{f.heading}</strong>
+                  {' — '}{f.desc}
+                </span>
               </li>
             ))}
           </ul>
         </div>
 
         {/* Footer */}
-        <p style={{ color: 'rgba(245,241,233,0.25)', fontSize: 12 }} className="relative z-10">
-          © {new Date().getFullYear()} Word Of Mouth Agency · wordofmouthagency.com.au
-        </p>
+        <div className="relative z-10 flex items-center gap-4">
+          <p style={{ color: 'rgba(245,241,233,0.25)', fontSize: 12 }}>
+            © {new Date().getFullYear()} Word Of Mouth Agency · wordofmouthagency.com.au
+          </p>
+          <a href="/privacy" style={{ color: 'rgba(245,241,233,0.35)', fontSize: 12 }} className="hover:underline">Privacy Policy</a>
+          <a href="/terms"   style={{ color: 'rgba(245,241,233,0.35)', fontSize: 12 }} className="hover:underline">Terms of Service</a>
+        </div>
       </div>
 
       {/* ── Right form panel ────────────────────────────────────── */}
@@ -94,7 +102,7 @@ export default function Login() {
                 Sign in
               </h2>
               <p style={{ color: '#092137', opacity: 0.45, fontSize: 13.5 }}>
-                Use your WOM agency account to continue
+                Sign in with your WOM agency account
               </p>
             </div>
 

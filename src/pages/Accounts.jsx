@@ -170,13 +170,16 @@ function AccountRow({ account }) {
             <span className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
               <CheckCircle2 size={11} /> Connected
             </span>
+          ) : account.platform_user_id && isMeta ? (
+            <span className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full font-medium">
+              <XCircle size={11} /> Reconnect required
+            </span>
           ) : (
             <span className="flex items-center gap-1 text-xs text-[#092137]/40 bg-[#EDE8DC] px-2 py-0.5 rounded-full">
               <XCircle size={11} /> Not connected
             </span>
           )}
-          {/* "Live" badge for Meta platforms that are actually wired up */}
-          {isMeta && !account.connected && (
+          {isMeta && !account.connected && !account.platform_user_id && (
             <span className="flex items-center gap-1 text-xs text-[#F0A629] bg-[#FEF8EC] border border-[#F0A629]/30 px-2 py-0.5 rounded-full font-medium">
               Ready to connect
             </span>
@@ -195,7 +198,9 @@ function AccountRow({ account }) {
           </p>
         ) : (
           <p className="text-xs text-[#092137]/40 mt-0.5">
-            {isMeta
+            {account.platform_user_id && isMeta
+              ? 'Token expired or revoked — click Reconnect to re-authorise'
+              : isMeta
               ? 'Click Connect → you\'ll be redirected to Facebook to authorise'
               : 'OAuth integration coming soon'}
           </p>
@@ -206,7 +211,8 @@ function AccountRow({ account }) {
         {account.connected ? (
           <>
             <button
-              title="Refresh token"
+              title="Re-authorise with Facebook"
+              onClick={() => handleConnect(account.platform, account.client_id)}
               className="w-8 h-8 rounded-lg bg-[#EDE8DC] hover:bg-[#d6d0c4] flex items-center justify-center text-[#092137]/50 transition-colors"
             >
               <RefreshCw size={14} />
@@ -229,11 +235,13 @@ function AccountRow({ account }) {
             className={cn(
               'text-xs py-1.5 px-4 rounded-full font-medium transition-all duration-200',
               isMeta
-                ? 'btn-primary'
+                ? account.platform_user_id
+                  ? 'bg-amber-500 hover:bg-amber-600 text-white border-0'
+                  : 'btn-primary'
                 : 'bg-[#EDE8DC] text-[#092137]/30 cursor-not-allowed border-0'
             )}
           >
-            Connect
+            {account.platform_user_id ? 'Reconnect' : 'Connect'}
           </button>
         )}
       </div>

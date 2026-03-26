@@ -49,24 +49,25 @@ export default function RankTracking() {
 
   // Check connection status for selected client
   useEffect(() => {
-    if (!selectedClient) { setConnection(null); setData(null); return }
+    if (!selectedClient) { setConnection(null); setData(null); setSelectedSite(''); return }
     checkConnection()
   }, [selectedClient?.id])
 
   async function checkConnection() {
     setConnLoading(true)
     try {
-      // Try to fetch with a dummy siteUrl to see if connection exists
-      const res = await fetch(`/api/gsc-data?clientId=${selectedClient.id}&siteUrl=https://check.test`)
+      const res  = await fetch(`/api/gsc-data?type=info&clientId=${selectedClient.id}`)
       const json = await res.json()
-      if (res.status === 404) {
+      if (!json.connected) {
         setConnection(null)
       } else {
-        // Connection exists — get sites list from Supabase via the connection
-        // We'll re-use the error response which tells us connection exists
-        setConnection({ exists: true })
+        setConnection(json)
+        // Auto-select the first site if none selected
+        if (!selectedSite && json.sites?.length) {
+          setSelectedSite(json.sites[0])
+        }
       }
-    } catch (_) {
+    } catch {
       setConnection(null)
     } finally {
       setConnLoading(false)
@@ -75,7 +76,7 @@ export default function RankTracking() {
 
   function connectGSC() {
     if (!selectedClient) return
-    window.location.href = `/api/gsc-auth?clientId=${selectedClient.id}`
+    window.location.href = `/api/gsc-oauth?action=auth&clientId=${selectedClient.id}`
   }
 
   async function fetchData() {
@@ -170,12 +171,25 @@ export default function RankTracking() {
             <div className="flex flex-wrap gap-3 items-end">
               <div className="flex-1 min-w-[200px]">
                 <label className="text-xs font-medium text-[#092137]/50 mb-1.5 block">Search Console Property</label>
-                <input
-                  value={selectedSite}
-                  onChange={e => setSelectedSite(e.target.value)}
-                  placeholder="https://example.com.au/"
-                  className="w-full px-3 py-2.5 text-sm border border-[#EDE8DC] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300"
-                />
+                {connection?.sites?.length > 0 ? (
+                  <select
+                    value={selectedSite}
+                    onChange={e => setSelectedSite(e.target.value)}
+                    className="w-full px-3 py-2.5 text-sm border border-[#EDE8DC] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white"
+                  >
+                    <option value="">Select a property…</option>
+                    {connection.sites.map(site => (
+                      <option key={site} value={site}>{site}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    value={selectedSite}
+                    onChange={e => setSelectedSite(e.target.value)}
+                    placeholder="https://example.com.au/"
+                    className="w-full px-3 py-2.5 text-sm border border-[#EDE8DC] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  />
+                )}
               </div>
               <div>
                 <label className="text-xs font-medium text-[#092137]/50 mb-1.5 block">Date Range</label>

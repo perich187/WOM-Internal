@@ -251,6 +251,15 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
+      {/* Footer */}
+      <div className="pt-4 pb-2 flex items-center gap-4 flex-wrap" style={{ borderTop: '1px solid #EDE8DC' }}>
+        <p className="text-xs" style={{ color: '#092137', opacity: 0.3 }}>
+          © {new Date().getFullYear()} WOM Internal App · Word Of Mouth Agency
+        </p>
+        <a href="/privacy" className="text-xs hover:underline" style={{ color: '#092137', opacity: 0.4 }}>Privacy Policy</a>
+        <a href="/terms"   className="text-xs hover:underline" style={{ color: '#092137', opacity: 0.4 }}>Terms of Service</a>
+      </div>
     </div>
   )
 }

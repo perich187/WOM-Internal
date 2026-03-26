@@ -1,4 +1,4 @@
-import { Bell, Search, Plus, ChevronDown, LogOut } from 'lucide-react'
+import { Bell, Search, ChevronDown, LogOut } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useState, useRef, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
@@ -115,11 +115,6 @@ export default function Header({ sidebarWidth }) {
             }}
           />
         </div>
-
-        {/* New Post — gold button matching WOM site */}
-        <button onClick={() => navigate('/compose')} className="btn-primary gap-1.5">
-          <Plus size={16} /> New Post
-        </button>
 
         {/* Notifications */}
         <button

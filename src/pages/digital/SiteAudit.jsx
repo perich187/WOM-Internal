@@ -756,7 +756,7 @@ export default function SiteAudit() {
     try {
       // Step 1: Start — discover URLs
       const startRes = await fetch(
-        `/api/site-audit-job?action=start&url=${encodeURIComponent(url)}${clientId ? `&clientId=${clientId}` : ''}`,
+        `/api/site-audit?action=start&url=${encodeURIComponent(url)}${clientId ? `&clientId=${clientId}` : ''}`,
         { method: 'POST' }
       )
       if (!startRes.ok) {
@@ -785,7 +785,7 @@ export default function SiteAudit() {
 
         setCurrentPage(batch[batch.length - 1])
 
-        const crawlRes = await fetch('/api/site-audit-crawl', {
+        const crawlRes = await fetch('/api/site-audit?action=crawl', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ jobId: jid, urls: batch, depths: batchDepths }),
@@ -804,7 +804,7 @@ export default function SiteAudit() {
 
       // Step 3: Finalize
       setPhase('finalizing')
-      const finalRes = await fetch(`/api/site-audit-finalize?jobId=${jid}`, { method: 'POST' })
+      const finalRes = await fetch(`/api/site-audit?action=finalize&jobId=${jid}`, { method: 'POST' })
       if (!finalRes.ok) {
         const d = await finalRes.json().catch(() => ({}))
         throw new Error(d.error || `Finalize failed (${finalRes.status})`)
