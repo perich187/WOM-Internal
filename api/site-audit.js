@@ -71,6 +71,7 @@ function extractInternalLinks(html, baseUrl) {
       const parsed = new URL(normalised)
       if (parsed.hostname !== baseHostname) continue
       if (EXCLUDED_EXTENSIONS.test(parsed.pathname)) continue
+      if (parsed.pathname.startsWith('/cdn-cgi/')) continue
       links.add(normalised)
     } catch { continue }
   }
