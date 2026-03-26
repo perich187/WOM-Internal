@@ -112,208 +112,175 @@ function AddKeywordsModal({ domain, onAdd, onClose }) {
   )
 }
 
-// ── PDF Print Report ──────────────────────────────────────────────────────────
+// ── PDF Report HTML builder ────────────────────────────────────────────────────
 
-function PrintReport({ client, domain, results, onClose }) {
-  const dateStr  = new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })
-  const sorted   = [...results].sort((a, b) => (a.position ?? 999) - (b.position ?? 999))
-  const ranked   = results.filter(r => r.position)
-  const top3     = results.filter(r => r.position && r.position <= 3).length
-  const top10    = results.filter(r => r.position && r.position <= 10).length
+function buildReportHTML(client, domain, results) {
+  const dateStr   = new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })
+  const sorted    = [...results].sort((a, b) => (a.position ?? 999) - (b.position ?? 999))
+  const ranked    = results.filter(r => r.position)
+  const top3      = results.filter(r => r.position && r.position <= 3).length
+  const top10     = results.filter(r => r.position && r.position <= 10).length
   const notRanked = results.filter(r => !r.position).length
-  const avgPos   = ranked.length
+  const avgPos    = ranked.length
     ? (ranked.reduce((s, r) => s + r.position, 0) / ranked.length).toFixed(1)
     : '—'
-
-  useEffect(() => {
-    function afterPrint() { document.body.classList.remove('rank-pdf-printing') }
-    window.addEventListener('afterprint', afterPrint)
-    return () => window.removeEventListener('afterprint', afterPrint)
-  }, [])
-
-  function handlePrint() {
-    document.body.classList.add('rank-pdf-printing')
-    window.print()
-  }
 
   const posColor = p => !p ? '#9CA3AF' : p <= 3 ? '#10B981' : p <= 10 ? '#3B82F6' : p <= 20 ? '#F59E0B' : '#EF4444'
   const kdColor  = d => d < 30 ? '#10B981' : d < 60 ? '#F59E0B' : '#EF4444'
 
-  const cell  = { padding: '11px 16px' }
-  const th    = { padding: '10px 16px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: 'rgba(9,33,55,0.45)', textTransform: 'uppercase', letterSpacing: '0.1em', backgroundColor: '#F9F7F3', borderBottom: '1px solid #EDE8DC' }
+  const SERP_LABELS = { featured_snippet: 'Featured', local_pack: 'Local', knowledge_graph: 'Knowledge', video: 'Video', people_also_ask: 'PAA', shopping: 'Shopping' }
+  const SERP_COLORS = { featured_snippet: '#7C3AED', local_pack: '#0891B2', knowledge_graph: '#EA580C', video: '#DC2626', people_also_ask: '#65A30D', shopping: '#CA8A04' }
+
+  const rows = sorted.map(row => {
+    const pc  = posColor(row.position)
+    const posCell = row.position
+      ? `<span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:${pc};color:white;font-size:12px;font-weight:800">${row.position}</span>`
+      : `<span style="color:rgba(9,33,55,0.25)">—</span>`
+
+    const chgCell = row.change != null
+      ? `<span style="display:inline-flex;align-items:center;gap:2px;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700;background:${row.change > 0 ? '#D1FAE5' : row.change < 0 ? '#FEE2E2' : '#F3F4F6'};color:${row.change > 0 ? '#065F46' : row.change < 0 ? '#991B1B' : '#6B7280'}">${row.change > 0 ? '↑' : row.change < 0 ? '↓' : '='}${row.change !== 0 ? Math.abs(row.change) : ''}</span>`
+      : `<span style="color:rgba(9,33,55,0.25)">—</span>`
+
+    const urlCell = row.url
+      ? `<span style="color:#3B82F6">${row.url.replace(/^https?:\/\/[^/]+/, '') || '/'}</span>`
+      : `<span style="color:rgba(9,33,55,0.25)">Not ranking</span>`
+
+    const volCell  = row.volume ? row.volume.toLocaleString() : `<span style="color:rgba(9,33,55,0.25)">—</span>`
+    const kdCell   = row.difficulty != null
+      ? `<span style="font-size:12px;font-weight:700;color:${kdColor(row.difficulty)}">${row.difficulty}</span>`
+      : `<span style="color:rgba(9,33,55,0.25)">—</span>`
+
+    const serpTags = (row.serpFeatures ?? []).slice(0, 3)
+      .filter(f => SERP_LABELS[f])
+      .map(f => `<span style="padding:1px 6px;border-radius:4px;background:${SERP_COLORS[f]};color:white;font-weight:700;font-size:10px;margin-right:3px">${SERP_LABELS[f]}</span>`)
+      .join('')
+
+    return `<tr style="border-bottom:1px solid #F5F1E9">
+      <td style="padding:11px 16px;font-size:13px;font-weight:600;color:#092137">${row.keyword}</td>
+      <td style="padding:11px 16px">${posCell}</td>
+      <td style="padding:11px 16px">${chgCell}</td>
+      <td style="padding:11px 16px;font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${urlCell}</td>
+      <td style="padding:11px 16px;font-size:13px;color:rgba(9,33,55,0.6)">${volCell}</td>
+      <td style="padding:11px 16px">${kdCell}</td>
+      <td style="padding:11px 16px;font-size:11px">${serpTags || '<span style="color:rgba(9,33,55,0.25)">—</span>'}</td>
+    </tr>`
+  }).join('')
+
+  const statsHTML = [
+    ['Tracked',       results.length, '#092137'],
+    ['Top 3',         top3,           '#10B981'],
+    ['Top 10',        top10,          '#3B82F6'],
+    ['Not Ranked',    notRanked,      '#9CA3AF'],
+    ['Avg. Position', avgPos,         '#F59E0B'],
+  ].map(([label, value, color]) => `
+    <div style="background:white;border-radius:12px;padding:18px 14px;border:1px solid #EDE8DC;text-align:center">
+      <p style="font-size:26px;font-weight:800;color:${color};margin:0">${value}</p>
+      <p style="font-size:10px;color:rgba(9,33,55,0.5);margin-top:5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em">${label}</p>
+    </div>`).join('')
+
+  const legendHTML = [['1–3','#10B981'],['4–10','#3B82F6'],['11–20','#F59E0B'],['21+','#EF4444'],['Not ranking','#9CA3AF']]
+    .map(([l, c]) => `<span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;color:rgba(9,33,55,0.55);margin-right:16px"><span style="width:10px;height:10px;border-radius:3px;background:${c};display:inline-block"></span>${l}</span>`)
+    .join('')
+
+  const thStyle = 'padding:10px 16px;text-align:left;font-size:10px;font-weight:700;color:rgba(9,33,55,0.45);text-transform:uppercase;letter-spacing:.1em'
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Rank Tracking Report${client?.client_name ? ` — ${client.client_name}` : ''}</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F5F1E9}
+    @media print{@page{margin:0;size:A4 portrait}}
+  </style>
+</head>
+<body>
+<div style="max-width:820px;margin:0 auto">
+  <div style="background:#092137;padding:0 48px 40px">
+    <div style="height:5px;background:#F0A629;border-radius:3px;margin-bottom:36px"></div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div>
+        <p style="color:#F0A629;font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;margin-bottom:10px">Word of Mouth Agency</p>
+        <h1 style="color:white;font-size:34px;font-weight:800;line-height:1.15">Rank Tracking Report</h1>
+        ${(client?.client_name || domain) ? `<p style="color:rgba(245,241,233,.5);font-size:14px;margin-top:10px">${client?.client_name ?? ''}${client?.client_name && domain ? ' · ' : ''}${domain}</p>` : ''}
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <p style="color:rgba(245,241,233,.35);font-size:11px;margin-bottom:4px">Generated</p>
+        <p style="color:rgba(245,241,233,.8);font-size:13px;font-weight:600">${dateStr}</p>
+      </div>
+    </div>
+  </div>
+  <div style="background:#F5F1E9;padding:36px 48px 48px">
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:28px">${statsHTML}</div>
+    <div style="margin-bottom:16px">${legendHTML}</div>
+    <div style="background:white;border-radius:12px;border:1px solid #EDE8DC;overflow:hidden">
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="background:#F9F7F3;border-bottom:1px solid #EDE8DC">
+          <th style="${thStyle}">Keyword</th>
+          <th style="${thStyle};width:60px">Rank</th>
+          <th style="${thStyle};width:72px">Change</th>
+          <th style="${thStyle}">Ranking URL</th>
+          <th style="${thStyle};width:72px">Volume</th>
+          <th style="${thStyle};width:48px">KD</th>
+          <th style="${thStyle}">SERP Features</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    <div style="margin-top:36px;text-align:center">
+      <div style="height:1px;background:#EDE8DC;margin-bottom:18px"></div>
+      <p style="font-size:11px;color:rgba(9,33,55,.3)">Prepared by Word of Mouth Agency · wordofmouthagency.com.au</p>
+    </div>
+  </div>
+</div>
+</body>
+</html>`
+}
+
+// ── PDF Print Report ──────────────────────────────────────────────────────────
+
+function PrintReport({ client, domain, results, onClose }) {
+  const html = buildReportHTML(client, domain, results)
+
+  function handlePrint() {
+    const win = window.open('', '_blank')
+    win.document.write(html)
+    win.document.close()
+    win.focus()
+    // Small delay to let styles render before the print dialog opens
+    setTimeout(() => win.print(), 600)
+  }
 
   return (
-    <>
-      <style>{`
-        @media print {
-          body.rank-pdf-printing > *:not(#rank-pdf-root) { display: none !important; }
-          #rank-pdf-root { display: block !important; position: static !important; background: white !important; }
-          .rank-pdf-no-print { display: none !important; }
-          @page { margin: 0; size: A4 portrait; }
-          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-        }
-      `}</style>
-
-      <div id="rank-pdf-root" style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'white', overflowY: 'auto' }}>
-
-        {/* Toolbar — hidden on print */}
-        <div className="rank-pdf-no-print" style={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: '#092137', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <p style={{ color: 'rgba(245,241,233,0.55)', fontSize: 13, margin: 0 }}>
-            PDF Preview · {results.length} keywords
-          </p>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button
-              onClick={handlePrint}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', backgroundColor: '#F0A629', color: '#092137', borderRadius: 10, fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer' }}
-            >
-              <Download size={14} /> Save as PDF
-            </button>
-            <button
-              onClick={onClose}
-              style={{ padding: '8px 14px', color: 'rgba(245,241,233,0.6)', fontSize: 13, background: 'none', border: '1px solid rgba(245,241,233,0.15)', borderRadius: 10, cursor: 'pointer' }}
-            >
-              ✕ Close
-            </button>
-          </div>
-        </div>
-
-        {/* Report page */}
-        <div style={{ maxWidth: 820, margin: '0 auto' }}>
-
-          {/* Header */}
-          <div style={{ backgroundColor: '#092137', padding: '0 48px 40px' }}>
-            <div style={{ height: 5, backgroundColor: '#F0A629', borderRadius: 3, marginBottom: 36 }} />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div>
-                <p style={{ color: '#F0A629', fontSize: 11, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', marginBottom: 10 }}>
-                  Word of Mouth Agency
-                </p>
-                <h1 style={{ color: 'white', fontSize: 34, fontWeight: 800, margin: 0, lineHeight: 1.15 }}>
-                  Rank Tracking Report
-                </h1>
-                {(client?.client_name || domain) && (
-                  <p style={{ color: 'rgba(245,241,233,0.5)', fontSize: 14, marginTop: 10, margin: '10px 0 0' }}>
-                    {client?.client_name ?? ''}{client?.client_name && domain ? ' · ' : ''}{domain}
-                  </p>
-                )}
-              </div>
-              <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                <p style={{ color: 'rgba(245,241,233,0.35)', fontSize: 11, margin: '0 0 4px' }}>Generated</p>
-                <p style={{ color: 'rgba(245,241,233,0.8)', fontSize: 13, fontWeight: 600, margin: 0 }}>{dateStr}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Body */}
-          <div style={{ backgroundColor: '#F5F1E9', padding: '36px 48px 48px' }}>
-
-            {/* Summary stats */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 28 }}>
-              {[
-                { label: 'Tracked',     value: results.length, color: '#092137' },
-                { label: 'Top 3',       value: top3,           color: '#10B981' },
-                { label: 'Top 10',      value: top10,          color: '#3B82F6' },
-                { label: 'Not Ranked',  value: notRanked,      color: '#9CA3AF' },
-                { label: 'Avg. Position', value: avgPos,       color: '#F59E0B' },
-              ].map(s => (
-                <div key={s.label} style={{ backgroundColor: 'white', borderRadius: 12, padding: '18px 14px', border: '1px solid #EDE8DC', textAlign: 'center' }}>
-                  <p style={{ fontSize: 26, fontWeight: 800, color: s.color, margin: 0 }}>{s.value}</p>
-                  <p style={{ fontSize: 10, color: 'rgba(9,33,55,0.5)', marginTop: 5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{s.label}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* Position legend */}
-            <div style={{ display: 'flex', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
-              {[['1–3', '#10B981'], ['4–10', '#3B82F6'], ['11–20', '#F59E0B'], ['21+', '#EF4444'], ['Not ranking', '#9CA3AF']].map(([label, color]) => (
-                <span key={label} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'rgba(9,33,55,0.55)' }}>
-                  <span style={{ width: 10, height: 10, borderRadius: 3, backgroundColor: color, display: 'inline-block' }} />
-                  {label}
-                </span>
-              ))}
-            </div>
-
-            {/* Keyword table */}
-            <div style={{ backgroundColor: 'white', borderRadius: 12, border: '1px solid #EDE8DC', overflow: 'hidden' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr>
-                    <th style={th}>Keyword</th>
-                    <th style={{ ...th, width: 60 }}>Rank</th>
-                    <th style={{ ...th, width: 72 }}>Change</th>
-                    <th style={th}>Ranking URL</th>
-                    <th style={{ ...th, width: 72 }}>Volume</th>
-                    <th style={{ ...th, width: 48 }}>KD</th>
-                    <th style={th}>SERP Features</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sorted.map((row, i) => (
-                    <tr key={row.id} style={{ borderBottom: i < sorted.length - 1 ? '1px solid #F5F1E9' : 'none' }}>
-                      <td style={{ ...cell, fontSize: 13, fontWeight: 600, color: '#092137' }}>{row.keyword}</td>
-
-                      <td style={cell}>
-                        {row.position ? (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: 8, backgroundColor: posColor(row.position), color: 'white', fontSize: 12, fontWeight: 800 }}>
-                            {row.position}
-                          </span>
-                        ) : <span style={{ color: 'rgba(9,33,55,0.25)', fontSize: 13 }}>—</span>}
-                      </td>
-
-                      <td style={cell}>
-                        {row.change != null ? (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, padding: '3px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700, backgroundColor: row.change > 0 ? '#D1FAE5' : row.change < 0 ? '#FEE2E2' : '#F3F4F6', color: row.change > 0 ? '#065F46' : row.change < 0 ? '#991B1B' : '#6B7280' }}>
-                            {row.change > 0 ? '↑' : row.change < 0 ? '↓' : '='}{row.change !== 0 ? Math.abs(row.change) : ''}
-                          </span>
-                        ) : <span style={{ color: 'rgba(9,33,55,0.25)', fontSize: 13 }}>—</span>}
-                      </td>
-
-                      <td style={{ ...cell, fontSize: 11, color: '#3B82F6', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {row.url ? (row.url.replace(/^https?:\/\/[^/]+/, '') || '/') : <span style={{ color: 'rgba(9,33,55,0.25)' }}>Not ranking</span>}
-                      </td>
-
-                      <td style={{ ...cell, fontSize: 13, color: 'rgba(9,33,55,0.6)' }}>
-                        {row.volume ? formatNumber(row.volume) : '—'}
-                      </td>
-
-                      <td style={cell}>
-                        {row.difficulty != null ? (
-                          <span style={{ fontSize: 12, fontWeight: 700, color: kdColor(row.difficulty) }}>{row.difficulty}</span>
-                        ) : <span style={{ color: 'rgba(9,33,55,0.25)', fontSize: 13 }}>—</span>}
-                      </td>
-
-                      <td style={{ ...cell, fontSize: 11 }}>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-                          {(row.serpFeatures ?? []).slice(0, 3).map(f => {
-                            const labels = { featured_snippet: 'Featured', local_pack: 'Local', knowledge_graph: 'Knowledge', video: 'Video', people_also_ask: 'PAA', shopping: 'Shopping' }
-                            const colors = { featured_snippet: '#7C3AED', local_pack: '#0891B2', knowledge_graph: '#EA580C', video: '#DC2626', people_also_ask: '#65A30D', shopping: '#CA8A04' }
-                            if (!labels[f]) return null
-                            return (
-                              <span key={f} style={{ padding: '1px 6px', borderRadius: 4, backgroundColor: colors[f] ?? '#6B7280', color: 'white', fontWeight: 700, fontSize: 10 }}>
-                                {labels[f]}
-                              </span>
-                            )
-                          })}
-                          {!row.serpFeatures?.length && <span style={{ color: 'rgba(9,33,55,0.25)' }}>—</span>}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Footer */}
-            <div style={{ marginTop: 36, textAlign: 'center' }}>
-              <div style={{ height: 1, backgroundColor: '#EDE8DC', marginBottom: 18 }} />
-              <p style={{ fontSize: 11, color: 'rgba(9,33,55,0.3)', margin: 0 }}>
-                Prepared by Word of Mouth Agency · wordofmouthagency.com.au
-              </p>
-            </div>
-          </div>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', flexDirection: 'column', background: '#0a1628' }}>
+      {/* Toolbar */}
+      <div style={{ flexShrink: 0, backgroundColor: '#092137', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        <p style={{ color: 'rgba(245,241,233,0.55)', fontSize: 13, margin: 0 }}>
+          PDF Preview · {results.length} keyword{results.length !== 1 ? 's' : ''}
+        </p>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button
+            onClick={handlePrint}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', backgroundColor: '#F0A629', color: '#092137', borderRadius: 10, fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer' }}
+          >
+            <Download size={14} /> Save as PDF
+          </button>
+          <button
+            onClick={onClose}
+            style={{ padding: '8px 14px', color: 'rgba(245,241,233,0.6)', fontSize: 13, background: 'none', border: '1px solid rgba(245,241,233,0.15)', borderRadius: 10, cursor: 'pointer' }}
+          >
+            ✕ Close
+          </button>
         </div>
       </div>
-    </>
+      {/* Iframe preview — completely isolated from app styles */}
+      <iframe
+        srcDoc={html}
+        style={{ flex: 1, border: 'none', background: 'white' }}
+        title="Rank Tracking Report Preview"
+      />
+    </div>
   )
 }
 
