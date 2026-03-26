@@ -1,34 +1,92 @@
-import { NavLink, useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Users, Link2, CalendarDays,
   PenSquare, BarChart3, Settings, ChevronLeft, ChevronRight,
   Search, TrendingUp, Sparkles, Zap, ClipboardCheck, Globe,
+  FileBarChart, ChevronDown,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import WorkspaceSwitcher from './WorkspaceSwitcher'
 import { useWorkspace } from '@/lib/workspaces'
 
+// ── Social nav ────────────────────────────────────────────────────────────────
+
 const SOCIAL_NAV = [
-  { to: '/',          label: 'Dashboard',          icon: LayoutDashboard, exact: true },
-  { to: '/clients',   label: 'Clients',             icon: Users },
-  { to: '/accounts',  label: 'Connected Accounts',  icon: Link2 },
-  { to: '/calendar',  label: 'Content Calendar',    icon: CalendarDays },
-  { to: '/compose',   label: 'Compose & Schedule',  icon: PenSquare },
-  { to: '/analytics', label: 'Analytics',           icon: BarChart3 },
+  { to: '/',          label: 'Dashboard',         icon: LayoutDashboard, exact: true },
+  { to: '/accounts',  label: 'Connected Accounts', icon: Link2 },
+  { to: '/calendar',  label: 'Content Calendar',   icon: CalendarDays },
+  { to: '/compose',   label: 'Compose & Schedule', icon: PenSquare },
+  { to: '/analytics', label: 'Analytics',          icon: BarChart3 },
 ]
+
+// ── Digital nav ───────────────────────────────────────────────────────────────
 
 const DIGITAL_NAV = [
-  { to: '/digital',                label: 'Overview',          icon: Globe,          exact: true },
-  { to: '/digital/keywords',       label: 'Keyword Research',  icon: Search },
-  { to: '/digital/rank-tracking',  label: 'Rank Tracking',     icon: TrendingUp },
-  { to: '/digital/ai-overview',    label: 'AI Overview',       icon: Sparkles },
-  { to: '/digital/site-speed',     label: 'Site Speed',        icon: Zap },
-  { to: '/digital/site-audit',     label: 'Site Audit',        icon: ClipboardCheck },
+  { to: '/digital',                label: 'Overview',         icon: Globe,          exact: true },
+  { to: '/digital/keywords',       label: 'Keyword Research', icon: Search },
+  { to: '/digital/rank-tracker',   label: 'Rank Tracker',     icon: TrendingUp },
+  { to: '/digital/rank-tracking',  label: 'Search Console',   icon: BarChart3 },
+  { to: '/digital/ai-overview',    label: 'AI Overview',      icon: Sparkles },
+  { to: '/digital/site-speed',     label: 'Site Speed',       icon: Zap },
+  { to: '/digital/site-audit',     label: 'Site Audit',       icon: ClipboardCheck },
 ]
 
-const BOTTOM_ITEMS = [
-  { to: '/settings', label: 'Settings', icon: Settings },
+// ── Reporting grouped nav ─────────────────────────────────────────────────────
+
+// Platform colour dots for sub-items
+const PLATFORM_DOT = {
+  facebook:          '#1877F2',
+  instagram:         '#E1306C',
+  tiktok:            '#161616',
+  linkedin:          '#0A66C2',
+  'google-analytics':'#E37400',
+  'search-console':  '#4285F4',
+  'google-ads':      '#34A853',
+  'meta-ads':        '#1877F2',
+  'tiktok-ads':      '#EE1D52',
+}
+
+const REPORTING_GROUPS = [
+  {
+    label: 'Reports',
+    items: [
+      { to: '/reporting', label: 'All Reports', icon: FileBarChart, exact: true },
+    ],
+  },
+  {
+    label: 'Social',
+    items: [
+      { to: '/reporting/live-data/facebook',  label: 'Facebook',  dot: '#1877F2' },
+      { to: '/reporting/live-data/instagram', label: 'Instagram', dot: '#E1306C' },
+      { to: '/reporting/live-data/tiktok',    label: 'TikTok',    dot: '#161616' },
+      { to: '/reporting/live-data/linkedin',  label: 'LinkedIn',  dot: '#0A66C2' },
+    ],
+  },
+  {
+    label: 'Analytics',
+    items: [
+      { to: '/reporting/live-data/google-analytics', label: 'Google Analytics', dot: '#E37400' },
+      { to: '/reporting/live-data/search-console',   label: 'Search Console',   dot: '#4285F4' },
+    ],
+  },
+  {
+    label: 'Paid Ads',
+    items: [
+      { to: '/reporting/live-data/google-ads', label: 'Google Ads', dot: '#34A853' },
+      { to: '/reporting/live-data/meta-ads',   label: 'Meta Ads',   dot: '#1877F2' },
+      { to: '/reporting/live-data/tiktok-ads', label: 'TikTok Ads', dot: '#EE1D52' },
+    ],
+  },
+  {
+    label: 'SEO',
+    items: [
+      { to: '/reporting/live-data/rank-tracker', label: 'Rank Tracker', dot: '#0EA5E9' },
+    ],
+  },
 ]
+
+// ── Nav components ────────────────────────────────────────────────────────────
 
 function NavItem({ to, label, icon: Icon, exact, collapsed, activeColor }) {
   return (
@@ -53,14 +111,157 @@ function NavItem({ to, label, icon: Icon, exact, collapsed, activeColor }) {
   )
 }
 
+function ReportingNavGroup({ group, collapsed, activeColor, defaultOpen = true }) {
+  const location = useLocation()
+  const [open, setOpen] = useState(defaultOpen)
+
+  // Auto-open if any child is active
+  const anyActive = group.items.some(item =>
+    item.exact ? location.pathname === item.to : location.pathname.startsWith(item.to)
+  )
+
+  if (collapsed) {
+    // In collapsed mode, just show dots
+    return (
+      <div className="space-y-0.5">
+        {group.items.map(item => {
+          if (item.icon) {
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.exact}
+                title={item.label}
+                className={({ isActive }) => cn(
+                  'flex items-center justify-center w-full py-2.5 rounded-lg transition-all duration-150',
+                  !isActive && 'hover:bg-white/10'
+                )}
+                style={({ isActive }) =>
+                  isActive ? { backgroundColor: activeColor, color: '#092137' } : { color: 'rgba(245,241,233,0.65)' }
+                }
+              >
+                <item.icon size={18} />
+              </NavLink>
+            )
+          }
+          return (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              title={item.label}
+              className={({ isActive }) => cn(
+                'flex items-center justify-center w-full py-2 rounded-lg transition-all duration-150',
+                !isActive && 'hover:bg-white/10'
+              )}
+            >
+              {({ isActive }) => (
+                <span
+                  className="w-2.5 h-2.5 rounded-full"
+                  style={{ backgroundColor: isActive ? activeColor : item.dot ?? '#666' }}
+                />
+              )}
+            </NavLink>
+          )
+        })}
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      {/* Group header — only show toggle for non-Reports groups */}
+      {group.label !== 'Reports' && (
+        <button
+          onClick={() => setOpen(o => !o)}
+          className="w-full flex items-center justify-between px-3 py-1.5 mb-0.5 rounded-lg hover:bg-white/5 transition-colors"
+        >
+          <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(245,241,233,0.35)' }}>
+            {group.label}
+          </span>
+          <ChevronDown
+            size={12}
+            style={{ color: 'rgba(245,241,233,0.3)' }}
+            className={cn('transition-transform duration-150', open ? '' : '-rotate-90')}
+          />
+        </button>
+      )}
+
+      {/* Items */}
+      {(open || group.label === 'Reports') && (
+        <ul className="space-y-0.5">
+          {group.items.map(item => (
+            <li key={item.to}>
+              {item.icon ? (
+                // Top-level item with icon (e.g. All Reports)
+                <NavLink
+                  to={item.to}
+                  end={item.exact}
+                  className={({ isActive }) => cn(
+                    'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150',
+                    !isActive && 'hover:bg-white/10'
+                  )}
+                  style={({ isActive }) =>
+                    isActive
+                      ? { backgroundColor: activeColor, color: '#092137' }
+                      : { color: 'rgba(245,241,233,0.65)' }
+                  }
+                >
+                  {({ isActive }) => (
+                    <>
+                      <item.icon size={18} className="flex-shrink-0" />
+                      <span className="truncate">{item.label}</span>
+                    </>
+                  )}
+                </NavLink>
+              ) : (
+                // Sub-item with coloured dot
+                <NavLink
+                  to={item.to}
+                  className={({ isActive }) => cn(
+                    'flex items-center gap-3 pl-4 pr-3 py-2 rounded-lg text-sm transition-all duration-150',
+                    !isActive && 'hover:bg-white/10'
+                  )}
+                  style={({ isActive }) =>
+                    isActive
+                      ? { color: '#F5F1E9', fontWeight: 600 }
+                      : { color: 'rgba(245,241,233,0.55)' }
+                  }
+                >
+                  {({ isActive }) => (
+                    <>
+                      <span
+                        className="w-2 h-2 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: isActive ? item.dot : (item.dot + '80') }}
+                      />
+                      <span className="truncate">{item.label}</span>
+                    </>
+                  )}
+                </NavLink>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+const BOTTOM_ITEMS = [
+  { to: '/clients',  label: 'Clients',  icon: Users },
+  { to: '/settings', label: 'Settings', icon: Settings },
+]
+
+// ── Sidebar ───────────────────────────────────────────────────────────────────
+
 export default function Sidebar({ collapsed, onToggle }) {
   const { workspace } = useWorkspace()
 
-  const navItems = workspace.id === 'social'  ? SOCIAL_NAV
-                 : workspace.id === 'digital' ? DIGITAL_NAV
-                 : []
+  const isReporting = workspace.id === 'reporting'
+  const navItems    = workspace.id === 'social'  ? SOCIAL_NAV
+                    : workspace.id === 'digital' ? DIGITAL_NAV
+                    : []
 
-  const isComingSoon = navItems.length === 0
+  const isComingSoon = !isReporting && navItems.length === 0
 
   return (
     <aside
@@ -70,12 +271,22 @@ export default function Sidebar({ collapsed, onToggle }) {
       )}
       style={{ backgroundColor: '#092137' }}
     >
-      {/* Workspace Switcher (replaces logo) */}
       <WorkspaceSwitcher collapsed={collapsed} />
 
-      {/* Nav */}
       <nav className="flex-1 py-4 overflow-y-auto overflow-x-hidden">
-        {isComingSoon ? (
+        {isReporting ? (
+          // ── Reporting: grouped expandable nav ──
+          <div className={cn('space-y-3', collapsed ? 'px-1' : 'px-2')}>
+            {REPORTING_GROUPS.map(group => (
+              <ReportingNavGroup
+                key={group.label}
+                group={group}
+                collapsed={collapsed}
+                activeColor={workspace.color}
+              />
+            ))}
+          </div>
+        ) : isComingSoon ? (
           !collapsed && (
             <div className="px-4 py-6 text-center">
               <div
