@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import {
   Instagram, Facebook, Music2, Search, Loader2, Sparkles,
-  ExternalLink, CheckCircle2, AlertCircle,
+  ExternalLink, CheckCircle2, AlertCircle, History, Clock,
 } from 'lucide-react'
-import { useDiscoverInfluencers } from '@/lib/hooks'
+import { useDiscoverInfluencers, useSearchHistory } from '@/lib/hooks'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
@@ -20,6 +20,22 @@ function formatNum(n) {
   return String(n)
 }
 
+const PLATFORM_META = {
+  instagram: { color: '#E1306C', Icon: Instagram },
+  facebook:  { color: '#1877F2', Icon: Facebook },
+  tiktok:    { color: '#161616', Icon: Music2 },
+}
+
+function timeAgo(dateStr) {
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 60)    return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24)     return `${hrs}h ago`
+  const days = Math.floor(hrs / 24)
+  return `${days}d ago`
+}
+
 export default function FindInfluencers() {
   const [platform, setPlatform] = useState('instagram')
   const [query,    setQuery]    = useState('')
@@ -27,6 +43,7 @@ export default function FindInfluencers() {
   const [result,   setResult]   = useState(null)
 
   const discover = useDiscoverInfluencers()
+  const { data: history } = useSearchHistory()
 
   const current = PLATFORMS.find(p => p.id === platform)
 
@@ -191,6 +208,66 @@ export default function FindInfluencers() {
                   </div>
                 )
               })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Search history */}
+      {!discover.isPending && (
+        <div className="bg-white rounded-xl border border-[#EDE8DC] overflow-hidden">
+          <div className="flex items-center gap-2 px-5 py-3.5 border-b border-[#EDE8DC]">
+            <Clock size={15} className="text-[#092137]/50" />
+            <h3 className="font-semibold text-sm text-[#092137]">Recent Searches</h3>
+          </div>
+
+          {!history?.length ? (
+            <p className="text-sm text-[#092137]/40 text-center py-8">No searches yet — run your first one above.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-[#F5F1E9] text-xs font-semibold text-[#092137]/60 uppercase tracking-wider">
+                  <tr>
+                    <th className="text-left px-5 py-2.5">Platform</th>
+                    <th className="text-left px-5 py-2.5">Query</th>
+                    <th className="text-right px-5 py-2.5">Creators saved</th>
+                    <th className="text-right px-5 py-2.5">Source</th>
+                    <th className="text-right px-5 py-2.5">When</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#EDE8DC]">
+                  {history.map(h => {
+                    const meta = PLATFORM_META[h.platform]
+                    const PIcon = meta?.Icon
+                    return (
+                      <tr
+                        key={h.id}
+                        className="hover:bg-[#FEF8EC]/40 cursor-pointer"
+                        onClick={() => {
+                          setPlatform(h.platform)
+                          setQuery(h.query)
+                        }}
+                        title="Click to re-run this search"
+                      >
+                        <td className="px-5 py-2.5">
+                          <div className="flex items-center gap-2">
+                            {PIcon && <PIcon size={14} style={{ color: meta.color }} />}
+                            <span className="capitalize text-[#092137]/70">{h.platform}</span>
+                          </div>
+                        </td>
+                        <td className="px-5 py-2.5 font-medium text-[#092137]">#{h.query}</td>
+                        <td className="px-5 py-2.5 text-right text-[#092137]/70">{h.result_count}</td>
+                        <td className="px-5 py-2.5 text-right">
+                          {h.from_cache
+                            ? <span className="text-xs px-2 py-0.5 rounded-full bg-[#EDE8DC] text-[#092137]/60">cached</span>
+                            : <span className="text-xs px-2 py-0.5 rounded-full bg-[#FEF8EC] text-wom-gold">live</span>}
+                        </td>
+                        <td className="px-5 py-2.5 text-right text-[#092137]/50 text-xs">{timeAgo(h.searched_at)}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
         </div>

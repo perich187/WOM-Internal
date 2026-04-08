@@ -276,6 +276,13 @@ export default async function handler(req, res) {
 
     const saved = await upsertResults(supabase, platform, normalised, rows)
 
+    // Log every search to history (fire and forget — don't block the response)
+    supabase
+      .from('influencer_search_history')
+      .insert({ platform, query: normalised, result_count: saved.length, from_cache: fromCache })
+      .then(() => {})
+      .catch(() => {})
+
     return res.status(200).json({
       ok:        true,
       platform,

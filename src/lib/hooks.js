@@ -491,6 +491,21 @@ export function useBulkInsertInfluencers() {
   })
 }
 
+export function useSearchHistory() {
+  return useQuery({
+    queryKey: ['influencer_search_history'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('influencer_search_history')
+        .select('*')
+        .order('searched_at', { ascending: false })
+        .limit(100)
+      if (error) throw error
+      return data
+    },
+  })
+}
+
 export function useDiscoverInfluencers() {
   const qc = useQueryClient()
   return useMutation({
