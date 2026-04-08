@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Users, Link2, CalendarDays,
   PenSquare, BarChart3, Settings, ChevronLeft, ChevronRight,
   Search, TrendingUp, Sparkles, Zap, ClipboardCheck, Globe,
-  FileBarChart, ChevronDown,
+  FileBarChart, ChevronDown, Star, UserPlus, Megaphone,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import WorkspaceSwitcher from './WorkspaceSwitcher'
@@ -13,11 +13,14 @@ import { useWorkspace } from '@/lib/workspaces'
 // ── Social nav ────────────────────────────────────────────────────────────────
 
 const SOCIAL_NAV = [
-  { to: '/',          label: 'Dashboard',         icon: LayoutDashboard, exact: true },
-  { to: '/accounts',  label: 'Connected Accounts', icon: Link2 },
-  { to: '/calendar',  label: 'Content Calendar',   icon: CalendarDays },
-  { to: '/compose',   label: 'Compose & Schedule', icon: PenSquare },
-  { to: '/analytics', label: 'Analytics',          icon: BarChart3 },
+  { to: '/',                       label: 'Dashboard',          icon: LayoutDashboard, exact: true },
+  { to: '/accounts',               label: 'Connected Accounts', icon: Link2 },
+  { to: '/calendar',               label: 'Content Calendar',   icon: CalendarDays },
+  { to: '/compose',                label: 'Compose & Schedule', icon: PenSquare },
+  { to: '/analytics',              label: 'Analytics',          icon: BarChart3 },
+  { to: '/influencers',            label: 'Influencers',        icon: Star, exact: true },
+  { to: '/influencers/discover',   label: 'Find Influencers',   icon: UserPlus },
+  { to: '/influencers/campaigns',  label: 'Campaigns',          icon: Megaphone },
 ]
 
 // ── Digital nav ───────────────────────────────────────────────────────────────

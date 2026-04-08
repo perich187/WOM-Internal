@@ -401,6 +401,242 @@ export function useDashboardStats() {
   })
 }
 
+// ─── INFLUENCERS ─────────────────────────────────────────────────────────────
+
+export function useInfluencers() {
+  return useQuery({
+    queryKey: ['influencers'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('influencers')
+        .select('*')
+        .order('score', { ascending: false, nullsFirst: false })
+      if (error) throw error
+      return data
+    },
+  })
+}
+
+export function useCreateInfluencer() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload) => {
+      const { data, error } = await supabase
+        .from('influencers')
+        .insert({ ...payload, source: payload.source ?? 'manual' })
+        .select()
+        .single()
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['influencers'] }),
+  })
+}
+
+export function useUpdateInfluencer() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...updates }) => {
+      const { data, error } = await supabase
+        .from('influencers')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .select()
+        .single()
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['influencers'] }),
+  })
+}
+
+export function useDeleteInfluencer() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id) => {
+      const { error } = await supabase.from('influencers').delete().eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['influencers'] }),
+  })
+}
+
+export function useBulkInsertInfluencers() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (rows) => {
+      if (!rows?.length) return { inserted: 0, skipped: 0 }
+      // Dedupe client-side against existing handles so we don't hit the unique index.
+      const { data: existing } = await supabase
+        .from('influencers')
+        .select('instagram_handle, tiktok_handle, facebook_handle')
+      const seen = new Set()
+      ;(existing ?? []).forEach(e => {
+        if (e.instagram_handle) seen.add('ig:' + e.instagram_handle.toLowerCase())
+        if (e.tiktok_handle)    seen.add('tt:' + e.tiktok_handle.toLowerCase())
+        if (e.facebook_handle)  seen.add('fb:' + e.facebook_handle.toLowerCase())
+      })
+      const fresh = rows.filter(r => {
+        if (r.instagram_handle && seen.has('ig:' + r.instagram_handle.toLowerCase())) return false
+        if (r.tiktok_handle    && seen.has('tt:' + r.tiktok_handle.toLowerCase()))    return false
+        if (r.facebook_handle  && seen.has('fb:' + r.facebook_handle.toLowerCase()))  return false
+        return true
+      })
+      if (!fresh.length) return { inserted: 0, skipped: rows.length }
+      const { error } = await supabase.from('influencers').insert(fresh)
+      if (error) throw error
+      return { inserted: fresh.length, skipped: rows.length - fresh.length }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['influencers'] }),
+  })
+}
+
+export function useDiscoverInfluencers() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ platform, query, limit }) => {
+      const res = await fetch('/api/influencers?action=discover', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ platform, query, limit }),
+      })
+      const data = await res.json()
+      if (!data.ok) throw new Error(data.error ?? 'Discovery failed')
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['influencers'] }),
+  })
+}
+
+// ─── INFLUENCER CAMPAIGNS ────────────────────────────────────────────────────
+
+export function useInfluencerCampaigns() {
+  return useQuery({
+    queryKey: ['influencer_campaigns'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('influencer_campaigns')
+        .select('*, clients(client_name), campaign_influencers(id)')
+        .order('created_at', { ascending: false })
+      if (error) throw error
+      return data
+    },
+  })
+}
+
+export function useInfluencerCampaign(id) {
+  return useQuery({
+    queryKey: ['influencer_campaigns', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('influencer_campaigns')
+        .select('*, clients(id, client_name), campaign_influencers(*, influencers(*))')
+        .eq('id', id)
+        .single()
+      if (error) throw error
+      return data
+    },
+    enabled: !!id,
+  })
+}
+
+export function useCreateCampaign() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload) => {
+      const { data, error } = await supabase
+        .from('influencer_campaigns')
+        .insert(payload)
+        .select()
+        .single()
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['influencer_campaigns'] }),
+  })
+}
+
+export function useUpdateCampaign() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...updates }) => {
+      const { data, error } = await supabase
+        .from('influencer_campaigns')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .select()
+        .single()
+      if (error) throw error
+      return data
+    },
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ['influencer_campaigns'] })
+      qc.invalidateQueries({ queryKey: ['influencer_campaigns', id] })
+    },
+  })
+}
+
+export function useDeleteCampaign() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id) => {
+      const { error } = await supabase.from('influencer_campaigns').delete().eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['influencer_campaigns'] }),
+  })
+}
+
+export function useAddInfluencersToCampaign() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ campaignId, influencerIds }) => {
+      const rows = influencerIds.map(influencer_id => ({
+        campaign_id: campaignId,
+        influencer_id,
+      }))
+      const { data, error } = await supabase
+        .from('campaign_influencers')
+        .upsert(rows, { onConflict: 'campaign_id,influencer_id', ignoreDuplicates: true })
+        .select()
+      if (error) throw error
+      return data
+    },
+    onSuccess: (_, { campaignId }) => {
+      qc.invalidateQueries({ queryKey: ['influencer_campaigns'] })
+      qc.invalidateQueries({ queryKey: ['influencer_campaigns', campaignId] })
+    },
+  })
+}
+
+export function useUpdateCampaignInfluencer() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...updates }) => {
+      const { data, error } = await supabase
+        .from('campaign_influencers')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .select()
+        .single()
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['influencer_campaigns'] }),
+  })
+}
+
+export function useRemoveCampaignInfluencer() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id) => {
+      const { error } = await supabase.from('campaign_influencers').delete().eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['influencer_campaigns'] }),
+  })
+}
+
 // ─── PROFILE ──────────────────────────────────────────────────────────────────
 
 export function useProfile(userId) {

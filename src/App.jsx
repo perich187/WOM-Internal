@@ -15,6 +15,11 @@ import Calendar from './pages/Calendar'
 import Compose from './pages/Compose'
 import Analytics from './pages/Analytics'
 import Settings from './pages/Settings'
+import InfluencersLayout from './pages/influencers/InfluencersLayout'
+import InfluencersList from './pages/influencers/InfluencersList'
+import FindInfluencers from './pages/influencers/FindInfluencers'
+import Campaigns from './pages/influencers/Campaigns'
+import CampaignDetail from './pages/influencers/CampaignDetail'
 import DigitalLayout from './pages/digital/DigitalLayout'
 import DigitalHome from './pages/digital/DigitalHome'
 import KeywordResearch from './pages/digital/KeywordResearch'
@@ -65,6 +70,14 @@ export default function App() {
             <Route path="compose"       element={<Compose />} />
             <Route path="analytics"     element={<Analytics />} />
             <Route path="settings"      element={<Settings />} />
+
+            {/* Influencers */}
+            <Route path="influencers" element={<InfluencersLayout />}>
+              <Route index                 element={<InfluencersList />} />
+              <Route path="discover"       element={<FindInfluencers />} />
+              <Route path="campaigns"      element={<Campaigns />} />
+              <Route path="campaigns/:id"  element={<CampaignDetail />} />
+            </Route>
 
             {/* Digital workspace */}
             <Route path="digital" element={<DigitalLayout />}>
