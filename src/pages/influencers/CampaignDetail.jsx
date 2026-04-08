@@ -16,6 +16,7 @@ import { toast } from 'sonner'
 
 const CI_STATUSES = [
   { id: 'shortlisted', label: 'Shortlisted', color: 'bg-gray-100 text-gray-700' },
+  { id: 'to_message',  label: 'To Message',  color: 'bg-orange-100 text-orange-700' },
   { id: 'invited',     label: 'Invited',     color: 'bg-yellow-100 text-yellow-800' },
   { id: 'accepted',    label: 'Accepted',    color: 'bg-blue-100 text-blue-700' },
   { id: 'declined',    label: 'Declined',    color: 'bg-red-100 text-red-700' },
@@ -202,6 +203,14 @@ export default function CampaignDetail() {
     }
   }
 
+  const handleFieldChange = async (ci, field, value) => {
+    try {
+      await updateCi.mutateAsync({ id: ci.id, [field]: value === '' ? null : value })
+    } catch (err) {
+      toast.error(err.message ?? 'Update failed')
+    }
+  }
+
   const handleRemove = async (ci) => {
     if (!confirm(`Remove ${ci.influencers?.display_name ?? 'this influencer'} from campaign?`)) return
     try {
@@ -257,12 +266,15 @@ export default function CampaignDetail() {
             <table className="w-full text-sm">
               <thead className="bg-[#F5F1E9] text-xs font-semibold text-[#092137]/60 uppercase tracking-wider">
                 <tr>
-                  <th className="text-left px-4 py-3">Influencer</th>
-                  <th className="text-left px-4 py-3">Platforms</th>
-                  <th className="text-left px-4 py-3">Status</th>
-                  <th className="text-right px-4 py-3">Fee</th>
-                  <th className="text-left px-4 py-3">Post</th>
-                  <th className="text-right px-4 py-3"></th>
+                  <th className="text-left px-3 py-3">Influencer</th>
+                  <th className="text-left px-3 py-3">Platforms</th>
+                  <th className="text-left px-3 py-3">Status</th>
+                  <th className="text-left px-3 py-3">Offer</th>
+                  <th className="text-left px-3 py-3">Contact / Follow-up</th>
+                  <th className="text-left px-3 py-3">Posted</th>
+                  <th className="text-right px-3 py-3">Fee</th>
+                  <th className="text-left px-3 py-3">Post URL</th>
+                  <th className="text-right px-3 py-3"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#EDE8DC]">
@@ -270,8 +282,8 @@ export default function CampaignDetail() {
                   const inf = ci.influencers
                   if (!inf) return null
                   return (
-                    <tr key={ci.id}>
-                      <td className="px-4 py-3">
+                    <tr key={ci.id} className="align-top">
+                      <td className="px-3 py-3">
                         <div className="flex items-center gap-3">
                           <div className="w-9 h-9 rounded-full bg-[#F5F1E9] flex items-center justify-center overflow-hidden flex-shrink-0">
                             {(inf.ig_profile_pic || inf.tt_profile_pic) ? (
@@ -280,13 +292,13 @@ export default function CampaignDetail() {
                               <span className="text-xs font-bold text-[#092137]/50">{(inf.display_name ?? '?').charAt(0)}</span>
                             )}
                           </div>
-                          <div>
-                            <p className="font-medium text-[#092137]">{inf.display_name ?? inf.instagram_handle}</p>
-                            {inf.email && <p className="text-xs text-[#092137]/50">{inf.email}</p>}
+                          <div className="min-w-0">
+                            <p className="font-medium text-sm text-[#092137] truncate">{inf.display_name ?? inf.instagram_handle}</p>
+                            {inf.email && <p className="text-xs text-[#092137]/50 truncate max-w-[180px]">{inf.email}</p>}
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-3">
                         <div className="flex items-center gap-2">
                           {inf.instagram_handle && <Instagram size={14} className="text-[#E1306C]" />}
                           {inf.tiktok_handle    && <Music2    size={14} className="text-[#161616]" />}
@@ -294,7 +306,7 @@ export default function CampaignDetail() {
                           <span className="text-xs text-[#092137]/50 ml-1">{formatNum(totalFollowers(inf))}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-3">
                         <select
                           value={ci.status}
                           onChange={e => handleStatusChange(ci, e.target.value)}
@@ -303,26 +315,59 @@ export default function CampaignDetail() {
                           {CI_STATUSES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
                         </select>
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-3 py-3">
+                        <input
+                          type="text"
+                          defaultValue={ci.offer ?? ''}
+                          onBlur={e => handleFieldChange(ci, 'offer', e.target.value)}
+                          placeholder="e.g. LE BAR"
+                          className="w-28 text-xs px-2 py-1 rounded-md border border-[#EDE8DC] bg-white focus:outline-none focus:ring-2 focus:ring-wom-gold/30"
+                        />
+                      </td>
+                      <td className="px-3 py-3">
+                        <input
+                          type="text"
+                          defaultValue={ci.contact_note ?? ''}
+                          onBlur={e => handleFieldChange(ci, 'contact_note', e.target.value)}
+                          placeholder="Messaged / No reply…"
+                          className="w-44 text-xs px-2 py-1 rounded-md border border-[#EDE8DC] bg-white focus:outline-none focus:ring-2 focus:ring-wom-gold/30"
+                        />
+                      </td>
+                      <td className="px-3 py-3">
+                        <input
+                          type="date"
+                          defaultValue={ci.posted_date ?? ''}
+                          onBlur={e => handleFieldChange(ci, 'posted_date', e.target.value)}
+                          className="text-xs px-2 py-1 rounded-md border border-[#EDE8DC] bg-white focus:outline-none focus:ring-2 focus:ring-wom-gold/30"
+                        />
+                      </td>
+                      <td className="px-3 py-3 text-right">
                         <input
                           type="number"
                           step="0.01"
                           defaultValue={ci.fee ?? ''}
                           onBlur={e => handleFeeChange(ci, e.target.value)}
                           placeholder="—"
-                          className="w-24 text-right text-xs px-2 py-1 rounded-md border border-[#EDE8DC] bg-white focus:outline-none focus:ring-2 focus:ring-wom-gold/30"
+                          className="w-20 text-right text-xs px-2 py-1 rounded-md border border-[#EDE8DC] bg-white focus:outline-none focus:ring-2 focus:ring-wom-gold/30"
                         />
                       </td>
-                      <td className="px-4 py-3">
-                        {ci.post_url ? (
-                          <a href={ci.post_url} target="_blank" rel="noreferrer" className="text-xs text-wom-gold hover:underline inline-flex items-center gap-1">
-                            View <ExternalLink size={10} />
-                          </a>
-                        ) : (
-                          <span className="text-xs text-[#092137]/30">—</span>
-                        )}
+                      <td className="px-3 py-3">
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="url"
+                            defaultValue={ci.post_url ?? ''}
+                            onBlur={e => handleFieldChange(ci, 'post_url', e.target.value)}
+                            placeholder="https://…"
+                            className="w-36 text-xs px-2 py-1 rounded-md border border-[#EDE8DC] bg-white focus:outline-none focus:ring-2 focus:ring-wom-gold/30"
+                          />
+                          {ci.post_url && (
+                            <a href={ci.post_url} target="_blank" rel="noreferrer" className="text-wom-gold hover:text-[#092137]" title="Open post">
+                              <ExternalLink size={12} />
+                            </a>
+                          )}
+                        </div>
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-3 py-3 text-right">
                         <button onClick={() => handleRemove(ci)} className="p-1.5 rounded hover:bg-red-50 text-red-500" title="Remove">
                           <Trash2 size={14} />
                         </button>
