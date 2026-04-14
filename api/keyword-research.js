@@ -91,8 +91,8 @@ async function domainAnalysis({ domain, limit = 50, locationCode = 2036, languag
       location_code: locationCode,
       language_code: languageCode,
       limit:         Math.min(limit, 100),
-      order_by:      ['keyword_data.keyword_info.search_volume,desc'],
-      filters:       ['keyword_data.keyword_info.search_volume', '>', 0],
+      order_by:      ['ranked_serp_element.serp_item.rank_group,asc'],
+      filters:       ['ranked_serp_element.serp_item.rank_group', '>', 0],
     }])
 
     const items = data.tasks?.[0]?.result?.[0]?.items ?? []
