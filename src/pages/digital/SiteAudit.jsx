@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import {
-  ClipboardCheck, Globe, Loader2, AlertCircle, RefreshCw, X, ChevronDown, ChevronUp, ExternalLink,
+  ClipboardCheck, Globe, Loader2, AlertCircle, RefreshCw, X, ChevronDown, ChevronUp, ExternalLink, History,
 } from 'lucide-react'
 import {
   PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from 'recharts'
 import { useDigitalClient } from '@/lib/digitalClient'
+import { useSiteAuditHistory } from '@/lib/hooks'
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -718,6 +719,11 @@ export default function SiteAudit() {
   // Cancel flag
   const cancelRef = useRef(false)
 
+  const { data: auditHistory, refetch: refetchAuditHistory } = useSiteAuditHistory({
+    clientId: selectedClient?.id,
+    limit: 10,
+  })
+
   useEffect(() => {
     if (selectedClient?.website) {
       setDomain(selectedClient.website.replace(/^https?:\/\//, '').replace(/\/$/, ''))
@@ -815,6 +821,7 @@ export default function SiteAudit() {
 
       setResult(finalData)
       setPhase('complete')
+      refetchAuditHistory()
     } catch (err) {
       if (!cancelRef.current) {
         setError(err.message)
@@ -1089,6 +1096,59 @@ export default function SiteAudit() {
       {/* Detail side panel */}
       {panelTest && (
         <DetailPanel test={panelTest} onClose={() => setPanelTest(null)} />
+      )}
+
+      {/* History panel */}
+      {auditHistory?.length > 0 && (
+        <div className="bg-white rounded-xl border border-[#EDE8DC] overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-[#EDE8DC] flex items-center gap-2">
+            <History size={14} className="text-[#092137]/40" />
+            <p className="text-sm font-semibold text-[#092137]">Recent Audits</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-[#F5F1E9] text-xs font-semibold text-[#092137]/60 uppercase tracking-wider">
+                <tr>
+                  <th className="text-left px-5 py-2.5">Domain</th>
+                  <th className="text-center px-3 py-2.5">Score</th>
+                  <th className="text-center px-3 py-2.5">Pages</th>
+                  <th className="text-center px-3 py-2.5">Issues</th>
+                  <th className="text-right px-5 py-2.5">Date</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {auditHistory.map(row => {
+                  const r = row.result ?? {}
+                  const score = r.overallScore ?? null
+                  const scoreColor = score == null ? '#999' : score >= 80 ? '#10B981' : score >= 60 ? '#F59E0B' : '#EF4444'
+                  let displayDomain = row.url
+                  try { displayDomain = new URL(row.url).hostname.replace(/^www\./, '') } catch {}
+                  return (
+                    <tr key={row.id} className="hover:bg-[#F5F1E9]/40">
+                      <td className="px-5 py-3 text-[#092137]/70 truncate max-w-xs">{displayDomain}</td>
+                      <td className="px-3 py-3 text-center">
+                        {score != null
+                          ? <span className="text-xs font-bold" style={{ color: scoreColor }}>{score}</span>
+                          : <span className="text-xs text-[#092137]/30">—</span>}
+                      </td>
+                      <td className="px-3 py-3 text-center text-xs text-[#092137]/60">
+                        {r.pagesChecked ?? '—'}
+                      </td>
+                      <td className="px-3 py-3 text-center text-xs text-[#092137]/60">
+                        {r.issueCount != null
+                          ? <span className={r.issueCount > 0 ? 'text-red-500 font-medium' : 'text-green-600'}>{r.issueCount}</span>
+                          : '—'}
+                      </td>
+                      <td className="px-5 py-3 text-right text-xs text-[#092137]/40">
+                        {new Date(row.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: '2-digit' })}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
     </div>
   )

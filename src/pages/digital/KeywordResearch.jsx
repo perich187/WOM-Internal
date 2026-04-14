@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
 import {
   Search, TrendingUp, TrendingDown, Minus, Globe, Lightbulb,
-  LayoutList, Loader2, ExternalLink, AlertCircle, Download, Info,
+  LayoutList, Loader2, ExternalLink, AlertCircle, Download, Info, History,
 } from 'lucide-react'
 import { useDigitalClient } from '@/lib/digitalClient'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { useKeywordResearchHistory } from '@/lib/hooks'
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -337,6 +338,11 @@ export default function KeywordResearch() {
   const [result,    setResult]    = useState(null)
   const [error,     setError]     = useState(null)
 
+  const { data: kwHistory, refetch: refetchKwHistory } = useKeywordResearchHistory({
+    clientId: selectedClient?.id,
+    limit: 15,
+  })
+
   // Pre-fill domain from selected client
   useEffect(() => {
     if (mode === 'domain' && selectedClient?.website) {
@@ -370,12 +376,21 @@ export default function KeywordResearch() {
       const data = await res.json()
       if (!data.ok) throw new Error(data.error ?? 'Request failed')
       setResult(data)
+      refetchKwHistory()
     } catch (err) {
       setError(err.message ?? 'Something went wrong')
       toast.error(err.message ?? 'Something went wrong')
     } finally {
       setLoading(false)
     }
+  }
+
+  function rerunSearch(row) {
+    setMode(row.action)
+    setInput(row.query)
+    setLocation(row.location_code ?? 2036)
+    setResult(null)
+    setError(null)
   }
 
   return (
@@ -484,6 +499,53 @@ export default function KeywordResearch() {
           {result.action === 'ideas'  && <IdeasResults  data={{ seed: result.seed, suggestions: result.suggestions }} />}
           {result.action === 'serp'   && <SerpResults   data={{ keyword: result.keyword, organic: result.organic, features: result.features }} />}
         </>
+      )}
+
+      {/* History panel */}
+      {kwHistory?.length > 0 && (
+        <div className="bg-white rounded-xl border border-[#EDE8DC] overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-[#EDE8DC] flex items-center gap-2">
+            <History size={14} className="text-[#092137]/40" />
+            <p className="text-sm font-semibold text-[#092137]">Recent Searches</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-[#F5F1E9] text-xs font-semibold text-[#092137]/60 uppercase tracking-wider">
+                <tr>
+                  <th className="text-left px-5 py-2.5">Query</th>
+                  <th className="text-center px-3 py-2.5">Type</th>
+                  <th className="text-center px-3 py-2.5">Results</th>
+                  <th className="text-right px-5 py-2.5">Date</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {kwHistory.map(row => {
+                  const modeLabel = row.action === 'domain' ? 'Domain' : row.action === 'ideas' ? 'Ideas' : 'SERP'
+                  const modeColor = row.action === 'domain' ? 'bg-purple-50 text-purple-700'
+                                  : row.action === 'ideas'  ? 'bg-blue-50 text-blue-700'
+                                  :                           'bg-green-50 text-green-700'
+                  return (
+                    <tr
+                      key={row.id}
+                      className="hover:bg-[#F5F1E9]/40 cursor-pointer"
+                      onClick={() => rerunSearch(row)}
+                      title="Click to re-run this search"
+                    >
+                      <td className="px-5 py-3 font-medium text-[#092137]">{row.query}</td>
+                      <td className="px-3 py-3 text-center">
+                        <span className={cn('text-xs px-2 py-0.5 rounded-full font-medium', modeColor)}>{modeLabel}</span>
+                      </td>
+                      <td className="px-3 py-3 text-center text-xs text-[#092137]/60">{row.result_count}</td>
+                      <td className="px-5 py-3 text-right text-xs text-[#092137]/40">
+                        {new Date(row.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: '2-digit' })}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
     </div>
   )

@@ -1,12 +1,21 @@
 /**
  * Google PageSpeed Insights proxy
- * GET /api/site-speed?url=https://example.com&strategy=mobile|desktop
+ * GET /api/site-speed?url=https://example.com&strategy=mobile|desktop&clientId=uuid
  */
+import { createClient } from '@supabase/supabase-js'
+
+function getSupabase() {
+  const url  = process.env.SUPABASE_URL
+  const key  = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) return null
+  return createClient(url, key)
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   if (req.method === 'OPTIONS') return res.status(200).end()
 
-  const { url, strategy = 'mobile' } = req.query
+  const { url, strategy = 'mobile', clientId } = req.query
   if (!url) return res.status(400).json({ error: 'url param required' })
 
   const key = process.env.GOOGLE_API_KEY
@@ -56,7 +65,7 @@ export default async function handler(req, res) {
         score:       a.score,
       }))
 
-    return res.json({
+    const result = {
       url,
       strategy,
       fetchTime: data.lighthouseResult?.fetchTime ?? null,
@@ -68,7 +77,27 @@ export default async function handler(req, res) {
       },
       vitals,
       opportunities,
-    })
+    }
+
+    // Save to DB (fire-and-forget — don't fail the response if this errors)
+    try {
+      const sb = getSupabase()
+      if (sb) {
+        await sb.from('site_speed_results').insert({
+          client_id:     clientId || null,
+          url,
+          strategy,
+          scores:        result.scores,
+          vitals:        result.vitals,
+          opportunities: result.opportunities,
+          fetch_time:    result.fetchTime,
+        })
+      }
+    } catch (dbErr) {
+      console.warn('[site-speed] DB save failed:', dbErr.message)
+    }
+
+    return res.json(result)
   } catch (err) {
     console.error('[site-speed]', err)
     return res.status(500).json({ error: err.message })

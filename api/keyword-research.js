@@ -15,7 +15,34 @@
  *   Top 10 organic SERP results for a keyword.
  */
 
+import { createClient } from '@supabase/supabase-js'
+
 const DATAFORSEO_BASE = 'https://api.dataforseo.com/v3'
+
+function getSupabase() {
+  const url = process.env.SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) return null
+  return createClient(url, key)
+}
+
+async function saveHistory({ clientId, action, query, locationCode, resultCount, source, results }) {
+  try {
+    const sb = getSupabase()
+    if (!sb) return
+    await sb.from('keyword_research_history').insert({
+      client_id:     clientId || null,
+      action,
+      query,
+      location_code: locationCode ?? 2036,
+      result_count:  resultCount ?? 0,
+      source:        source || null,
+      results,
+    })
+  } catch (err) {
+    console.warn('[keyword-research] DB save failed:', err.message)
+  }
+}
 
 function dfsAuth() {
   const login    = process.env.DATAFORSEO_LOGIN
@@ -205,21 +232,38 @@ export default async function handler(req, res) {
     return res.status(400).json({ ok: false, error: `Unknown action: ${action}` })
   }
 
+  const { clientId, locationCode } = req.body ?? {}
+
   try {
     let result
     if (action === 'domain') {
       if (!req.body?.domain) return res.status(400).json({ ok: false, error: 'domain required' })
       result = await domainAnalysis(req.body)
+      saveHistory({
+        clientId, action, query: result.domain, locationCode,
+        resultCount: result.items?.length ?? 0,
+        source: result.source, results: result.items ?? [],
+      })
       return res.status(200).json({ ok: true, action, ...result })
     }
     if (action === 'ideas') {
       if (!req.body?.keyword) return res.status(400).json({ ok: false, error: 'keyword required' })
       result = await keywordIdeas(req.body)
+      saveHistory({
+        clientId, action, query: req.body.keyword, locationCode,
+        resultCount: result.suggestions?.length ?? 0,
+        results: result.suggestions ?? [],
+      })
       return res.status(200).json({ ok: true, action, ...result })
     }
     if (action === 'serp') {
       if (!req.body?.keyword) return res.status(400).json({ ok: false, error: 'keyword required' })
       result = await serpPreview(req.body)
+      saveHistory({
+        clientId, action, query: req.body.keyword, locationCode,
+        resultCount: result.organic?.length ?? 0,
+        results: result.organic ?? [],
+      })
       return res.status(200).json({ ok: true, action, ...result })
     }
   } catch (err) {

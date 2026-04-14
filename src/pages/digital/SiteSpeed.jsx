@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Zap, Smartphone, Monitor, Loader2, AlertCircle, RefreshCw } from 'lucide-react'
+import { Zap, Smartphone, Monitor, Loader2, AlertCircle, RefreshCw, History } from 'lucide-react'
 import { useDigitalClient } from '@/lib/digitalClient'
+import { useSiteSpeedHistory } from '@/lib/hooks'
 
 function ScoreRing({ score, label }) {
   const color = score >= 90 ? '#10B981' : score >= 50 ? '#F59E0B' : '#EF4444'
@@ -38,6 +39,11 @@ export default function SiteSpeed() {
   const [error, setError]   = useState(null)
   const [result, setResult] = useState(null)
 
+  const { data: history, refetch: refetchHistory } = useSiteSpeedHistory({
+    clientId: selectedClient?.id,
+    limit: 10,
+  })
+
   useEffect(() => {
     if (selectedClient?.website) {
       const w = selectedClient.website
@@ -54,7 +60,9 @@ export default function SiteSpeed() {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(`/api/site-speed?url=${encodeURIComponent(url)}&strategy=${strategy}`)
+      const params = new URLSearchParams({ url, strategy })
+      if (selectedClient?.id) params.set('clientId', selectedClient.id)
+      const res = await fetch(`/api/site-speed?${params}`)
       const data = await res.json()
       if (data.error) throw new Error(data.error)
       setResult(data)
@@ -62,6 +70,7 @@ export default function SiteSpeed() {
       setError(err.message)
     } finally {
       setLoading(false)
+      refetchHistory()
     }
   }
 
@@ -230,6 +239,60 @@ export default function SiteSpeed() {
               ? `${selectedClient.client_name}'s website is pre-filled above`
               : 'Select a client above to pre-fill their website URL'}
           </p>
+        </div>
+      )}
+
+      {/* History panel */}
+      {history?.length > 0 && (
+        <div className="bg-white rounded-xl border border-[#EDE8DC] overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-[#EDE8DC] flex items-center gap-2">
+            <History size={14} className="text-[#092137]/40" />
+            <p className="text-sm font-semibold text-[#092137]">Recent Tests</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-[#F5F1E9] text-xs font-semibold text-[#092137]/60 uppercase tracking-wider">
+                <tr>
+                  <th className="text-left px-5 py-2.5">URL</th>
+                  <th className="text-center px-3 py-2.5">Device</th>
+                  <th className="text-center px-3 py-2.5">Perf</th>
+                  <th className="text-center px-3 py-2.5">Access.</th>
+                  <th className="text-center px-3 py-2.5">SEO</th>
+                  <th className="text-right px-5 py-2.5">Date</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {history.map(row => {
+                  const sc = row.scores ?? {}
+                  const perfColor = sc.performance >= 90 ? '#10B981' : sc.performance >= 50 ? '#F59E0B' : '#EF4444'
+                  return (
+                    <tr
+                      key={row.id}
+                      className="hover:bg-[#F5F1E9]/40 cursor-pointer"
+                      onClick={() => { setUrl(row.url); setDevice(row.strategy); setResult({ ...row, fetchTime: row.fetch_time }) }}
+                    >
+                      <td className="px-5 py-3 text-[#092137]/70 truncate max-w-xs">{row.url}</td>
+                      <td className="px-3 py-3 text-center">
+                        <span className="text-xs capitalize text-[#092137]/50">{row.strategy}</span>
+                      </td>
+                      <td className="px-3 py-3 text-center">
+                        <span className="text-xs font-bold" style={{ color: perfColor }}>{sc.performance ?? '—'}</span>
+                      </td>
+                      <td className="px-3 py-3 text-center">
+                        <span className="text-xs text-[#092137]/70">{sc.accessibility ?? '—'}</span>
+                      </td>
+                      <td className="px-3 py-3 text-center">
+                        <span className="text-xs text-[#092137]/70">{sc.seo ?? '—'}</span>
+                      </td>
+                      <td className="px-5 py-3 text-right text-xs text-[#092137]/40">
+                        {new Date(row.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: '2-digit' })}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

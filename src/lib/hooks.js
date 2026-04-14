@@ -669,3 +669,79 @@ export function useProfile(userId) {
     enabled: !!userId,
   })
 }
+
+// ─── SITE SPEED HISTORY ───────────────────────────────────────────────────────
+
+export function useSiteSpeedHistory({ clientId, url, limit = 20 } = {}) {
+  return useQuery({
+    queryKey: ['site_speed_history', clientId, url],
+    queryFn: async () => {
+      let q = supabase
+        .from('site_speed_results')
+        .select('id, url, strategy, scores, vitals, opportunities, fetch_time, created_at, client_id')
+        .order('created_at', { ascending: false })
+        .limit(limit)
+      if (clientId) q = q.eq('client_id', clientId)
+      if (url)      q = q.eq('url', url)
+      const { data, error } = await q
+      if (error) throw error
+      return data
+    },
+  })
+}
+
+// ─── KEYWORD RESEARCH HISTORY ─────────────────────────────────────────────────
+
+export function useKeywordResearchHistory({ clientId, action, limit = 30 } = {}) {
+  return useQuery({
+    queryKey: ['keyword_research_history', clientId, action],
+    queryFn: async () => {
+      let q = supabase
+        .from('keyword_research_history')
+        .select('id, action, query, location_code, result_count, source, created_at, client_id')
+        .order('created_at', { ascending: false })
+        .limit(limit)
+      if (clientId) q = q.eq('client_id', clientId)
+      if (action)   q = q.eq('action', action)
+      const { data, error } = await q
+      if (error) throw error
+      return data
+    },
+  })
+}
+
+export function useKeywordResearchResultById(id) {
+  return useQuery({
+    queryKey: ['keyword_research_result', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('keyword_research_history')
+        .select('*')
+        .eq('id', id)
+        .single()
+      if (error) throw error
+      return data
+    },
+    enabled: !!id,
+  })
+}
+
+// ─── SITE AUDIT HISTORY ───────────────────────────────────────────────────────
+
+export function useSiteAuditHistory({ clientId, limit = 20 } = {}) {
+  return useQuery({
+    queryKey: ['site_audit_history', clientId],
+    queryFn: async () => {
+      let q = supabase
+        .from('site_audit_jobs')
+        .select('id, url, status, result, created_at, client_id')
+        .eq('status', 'complete')
+        .order('created_at', { ascending: false })
+        .limit(limit)
+      if (clientId) q = q.eq('client_id', clientId)
+      const { data, error } = await q
+      if (error) throw error
+      return data
+    },
+  })
+}
