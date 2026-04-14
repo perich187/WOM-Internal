@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import {
   Search, TrendingUp, TrendingDown, Minus, Globe, Lightbulb,
-  LayoutList, Loader2, ExternalLink, AlertCircle, Download, Info, History,
+  LayoutList, Loader2, ExternalLink, AlertCircle, Download, Info,
+  History, ListChecks, X, CheckSquare,
 } from 'lucide-react'
 import { useDigitalClient } from '@/lib/digitalClient'
 import { cn } from '@/lib/utils'
@@ -55,7 +56,6 @@ function TrendSparkline({ monthly }) {
   if (!monthly?.length) return <Minus size={14} className="text-gray-300" />
   const recent = monthly.slice(-6)
   const vals   = recent.map(m => m.search_volume ?? 0)
-  const max    = Math.max(...vals, 1)
   const first  = vals[0]
   const last   = vals[vals.length - 1]
   if (last > first * 1.1)  return <TrendingUp   size={14} className="text-green-500" />
@@ -75,13 +75,13 @@ function CompetitionDot({ val }) {
   )
 }
 
-// ── Export to CSV ─────────────────────────────────────────────────────────────
+// ── Export helpers ────────────────────────────────────────────────────────────
 
 function exportCsv(rows, filename) {
   if (!rows?.length) return
   const headers = Object.keys(rows[0]).join(',')
   const lines   = rows.map(r =>
-    Object.values(r).map(v => (typeof v === 'string' && v.includes(',') ? `"${v}"` : v)).join(',')
+    Object.values(r).map(v => (typeof v === 'string' && v.includes(',') ? `"${v}"` : v ?? '')).join(',')
   )
   const blob = new Blob([headers + '\n' + lines.join('\n')], { type: 'text/csv' })
   const url  = URL.createObjectURL(blob)
@@ -92,9 +92,89 @@ function exportCsv(rows, filename) {
   URL.revokeObjectURL(url)
 }
 
+function exportListCsv(kwMap) {
+  const rows = [...kwMap.values()].map(r => ({
+    keyword:    r.keyword,
+    volume:     r.volume ?? '',
+    difficulty: r.difficulty ?? '',
+    cpc:        r.cpc ?? '',
+    competition: r.competition ?? '',
+    position:   r.position ?? '',
+    url:        r.url ?? '',
+  }))
+  exportCsv(rows, 'keyword-list.csv')
+}
+
+// ── Keyword list tray ─────────────────────────────────────────────────────────
+
+function KeywordListTray({ kwMap, onRemove, onClear }) {
+  const [open, setOpen] = useState(false)
+  const count = kwMap.size
+  if (count === 0) return null
+
+  return (
+    <div className="fixed bottom-5 right-5 z-50 flex flex-col items-end gap-2">
+      {open && (
+        <div className="w-80 bg-white rounded-xl border border-[#EDE8DC] shadow-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-[#EDE8DC] flex items-center justify-between">
+            <p className="text-sm font-semibold text-[#092137]">Keyword List ({count})</p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => exportListCsv(kwMap)}
+                className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium"
+              >
+                <Download size={12} /> Export CSV
+              </button>
+              <button onClick={() => setOpen(false)} className="text-[#092137]/30 hover:text-[#092137]">
+                <X size={14} />
+              </button>
+            </div>
+          </div>
+          <div className="max-h-72 overflow-y-auto divide-y divide-gray-50">
+            {[...kwMap.values()].map(row => (
+              <div key={row.keyword} className="flex items-center gap-2 px-4 py-2.5 group">
+                <span className="flex-1 text-sm text-[#092137] truncate">{row.keyword}</span>
+                {row.volume != null && (
+                  <span className="text-xs text-[#092137]/40 flex-shrink-0">{fmtVol(row.volume)}</span>
+                )}
+                <button
+                  onClick={() => onRemove(row.keyword)}
+                  className="opacity-0 group-hover:opacity-100 text-[#092137]/30 hover:text-red-500 transition-opacity flex-shrink-0"
+                >
+                  <X size={13} />
+                </button>
+              </div>
+            ))}
+          </div>
+          <div className="px-4 py-2.5 border-t border-[#EDE8DC] flex justify-between items-center">
+            <button onClick={onClear} className="text-xs text-red-400 hover:text-red-600">Clear all</button>
+            <button
+              onClick={() => exportListCsv(kwMap)}
+              className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 flex items-center gap-1.5"
+            >
+              <Download size={12} /> Export ({count})
+            </button>
+          </div>
+        </div>
+      )}
+
+      <button
+        onClick={() => setOpen(v => !v)}
+        className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-full shadow-lg hover:bg-blue-700 transition-colors"
+      >
+        <ListChecks size={16} />
+        Keyword List
+        <span className="bg-white text-blue-600 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+          {count}
+        </span>
+      </button>
+    </div>
+  )
+}
+
 // ── Domain Analysis results ──────────────────────────────────────────────────
 
-function DomainResults({ items, domain, source }) {
+function DomainResults({ items, domain, source, kwMap, onToggle, onToggleAll }) {
   if (!items?.length) return (
     <div className="flex items-start gap-3 bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-sm text-yellow-900">
       <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
@@ -106,6 +186,7 @@ function DomainResults({ items, domain, source }) {
   )
 
   const isAdsSuggestion = source === 'ads_suggestions'
+  const allSelected = items.every(r => kwMap.has(r.keyword))
 
   return (
     <div className="space-y-3">
@@ -118,84 +199,111 @@ function DomainResults({ items, domain, source }) {
           </p>
         </div>
       )}
-    <div className="bg-white rounded-xl border border-[#EDE8DC] overflow-hidden">
-      <div className="px-5 py-3.5 border-b border-[#EDE8DC] flex items-center justify-between">
-        <div>
-          <p className="text-sm font-semibold text-[#092137]">
-            {isAdsSuggestion ? 'Keyword Suggestions' : 'Organic Keywords'} — {domain}
-          </p>
-          <p className="text-xs text-[#092137]/40 mt-0.5">{items.length} keywords found</p>
+      <div className="bg-white rounded-xl border border-[#EDE8DC] overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-[#EDE8DC] flex items-center justify-between">
+          <div>
+            <p className="text-sm font-semibold text-[#092137]">
+              {isAdsSuggestion ? 'Keyword Suggestions' : 'Organic Keywords'} — {domain}
+            </p>
+            <p className="text-xs text-[#092137]/40 mt-0.5">{items.length} keywords found</p>
+          </div>
+          <button
+            onClick={() => exportCsv(
+              items.map(r => ({ keyword: r.keyword, position: r.position, volume: r.volume, difficulty: r.difficulty, cpc: r.cpc, url: r.url })),
+              `${domain}-keywords.csv`
+            )}
+            className="flex items-center gap-1.5 text-xs text-[#092137]/50 hover:text-[#092137] transition-colors"
+          >
+            <Download size={13} /> Export CSV
+          </button>
         </div>
-        <button
-          onClick={() => exportCsv(
-            items.map(r => ({ keyword: r.keyword, position: r.position, volume: r.volume, difficulty: r.difficulty, cpc: r.cpc, url: r.url })),
-            `${domain}-keywords.csv`
-          )}
-          className="flex items-center gap-1.5 text-xs text-[#092137]/50 hover:text-[#092137] transition-colors"
-        >
-          <Download size={13} /> Export CSV
-        </button>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-[#F5F1E9] text-xs font-semibold text-[#092137]/60 uppercase tracking-wider">
-            <tr>
-              <th className="text-left px-5 py-3">Keyword</th>
-              {!isAdsSuggestion && <th className="text-right px-5 py-3">Position</th>}
-              <th className="text-right px-5 py-3">Volume</th>
-              {!isAdsSuggestion && <th className="text-left px-5 py-3">Difficulty</th>}
-              <th className="text-left px-5 py-3">Competition</th>
-              <th className="text-right px-5 py-3">CPC</th>
-              <th className="text-center px-5 py-3">Trend</th>
-              {!isAdsSuggestion && <th className="px-5 py-3"></th>}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {items.map((row, i) => (
-              <tr key={i} className="hover:bg-[#F5F1E9]/40">
-                <td className="px-5 py-3 font-medium text-[#092137]">{row.keyword}</td>
-                {!isAdsSuggestion && (
-                  <td className="px-5 py-3 text-right">
-                    {row.position ? (
-                      <span className={cn(
-                        'text-xs font-bold px-2 py-0.5 rounded-full',
-                        row.position <= 3  ? 'bg-green-100 text-green-700' :
-                        row.position <= 10 ? 'bg-blue-100 text-blue-700' :
-                                             'bg-gray-100 text-gray-600'
-                      )}>
-                        #{row.position}
-                      </span>
-                    ) : <span className="text-xs text-[#092137]/30">—</span>}
-                  </td>
-                )}
-                <td className="px-5 py-3 text-right text-[#092137]/70">{fmtVol(row.volume)}</td>
-                {!isAdsSuggestion && <td className="px-5 py-3"><DifficultyBar score={row.difficulty} /></td>}
-                <td className="px-5 py-3"><CompetitionDot val={row.competition} /></td>
-                <td className="px-5 py-3 text-right text-[#092137]/70">{fmtCpc(row.cpc)}</td>
-                <td className="px-5 py-3 text-center"><TrendSparkline monthly={row.trend} /></td>
-                {!isAdsSuggestion && (
-                  <td className="px-5 py-3 text-right">
-                    {row.url && (
-                      <a href={row.url} target="_blank" rel="noreferrer" className="text-[#092137]/30 hover:text-blue-500">
-                        <ExternalLink size={13} />
-                      </a>
-                    )}
-                  </td>
-                )}
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-[#F5F1E9] text-xs font-semibold text-[#092137]/60 uppercase tracking-wider">
+              <tr>
+                <th className="px-4 py-3 w-8">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={() => onToggleAll(items, allSelected)}
+                    className="rounded border-gray-300 text-blue-600 cursor-pointer"
+                    title={allSelected ? 'Deselect all' : 'Select all'}
+                  />
+                </th>
+                <th className="text-left px-3 py-3">Keyword</th>
+                {!isAdsSuggestion && <th className="text-right px-5 py-3">Position</th>}
+                <th className="text-right px-5 py-3">Volume</th>
+                {!isAdsSuggestion && <th className="text-left px-5 py-3">Difficulty</th>}
+                <th className="text-left px-5 py-3">Competition</th>
+                <th className="text-right px-5 py-3">CPC</th>
+                <th className="text-center px-5 py-3">Trend</th>
+                {!isAdsSuggestion && <th className="px-5 py-3"></th>}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {items.map((row, i) => {
+                const checked = kwMap.has(row.keyword)
+                return (
+                  <tr
+                    key={i}
+                    onClick={() => onToggle(row)}
+                    className={cn('cursor-pointer transition-colors', checked ? 'bg-blue-50/60 hover:bg-blue-50' : 'hover:bg-[#F5F1E9]/40')}
+                  >
+                    <td className="px-4 py-3 w-8">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => onToggle(row)}
+                        onClick={e => e.stopPropagation()}
+                        className="rounded border-gray-300 text-blue-600 cursor-pointer"
+                      />
+                    </td>
+                    <td className="px-3 py-3 font-medium text-[#092137]">{row.keyword}</td>
+                    {!isAdsSuggestion && (
+                      <td className="px-5 py-3 text-right">
+                        {row.position ? (
+                          <span className={cn(
+                            'text-xs font-bold px-2 py-0.5 rounded-full',
+                            row.position <= 3  ? 'bg-green-100 text-green-700' :
+                            row.position <= 10 ? 'bg-blue-100 text-blue-700' :
+                                                 'bg-gray-100 text-gray-600'
+                          )}>
+                            #{row.position}
+                          </span>
+                        ) : <span className="text-xs text-[#092137]/30">—</span>}
+                      </td>
+                    )}
+                    <td className="px-5 py-3 text-right text-[#092137]/70">{fmtVol(row.volume)}</td>
+                    {!isAdsSuggestion && <td className="px-5 py-3"><DifficultyBar score={row.difficulty} /></td>}
+                    <td className="px-5 py-3"><CompetitionDot val={row.competition} /></td>
+                    <td className="px-5 py-3 text-right text-[#092137]/70">{fmtCpc(row.cpc)}</td>
+                    <td className="px-5 py-3 text-center"><TrendSparkline monthly={row.trend} /></td>
+                    {!isAdsSuggestion && (
+                      <td className="px-5 py-3 text-right" onClick={e => e.stopPropagation()}>
+                        {row.url && (
+                          <a href={row.url} target="_blank" rel="noreferrer" className="text-[#092137]/30 hover:text-blue-500">
+                            <ExternalLink size={13} />
+                          </a>
+                        )}
+                      </td>
+                    )}
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
     </div>
   )
 }
 
 // ── Keyword Ideas results ────────────────────────────────────────────────────
 
-function IdeasResults({ data }) {
+function IdeasResults({ data, kwMap, onToggle, onToggleAll }) {
   const { seed, suggestions } = data
+
+  const allSelected = suggestions.length > 0 && suggestions.every(r => kwMap.has(r.keyword))
 
   return (
     <div className="space-y-4">
@@ -238,7 +346,16 @@ function IdeasResults({ data }) {
             <table className="w-full text-sm">
               <thead className="bg-[#F5F1E9] text-xs font-semibold text-[#092137]/60 uppercase tracking-wider">
                 <tr>
-                  <th className="text-left px-5 py-3">Keyword</th>
+                  <th className="px-4 py-3 w-8">
+                    <input
+                      type="checkbox"
+                      checked={allSelected}
+                      onChange={() => onToggleAll(suggestions, allSelected)}
+                      className="rounded border-gray-300 text-blue-600 cursor-pointer"
+                      title={allSelected ? 'Deselect all' : 'Select all'}
+                    />
+                  </th>
+                  <th className="text-left px-3 py-3">Keyword</th>
                   <th className="text-right px-5 py-3">Volume</th>
                   <th className="text-left px-5 py-3">Difficulty</th>
                   <th className="text-left px-5 py-3">Competition</th>
@@ -247,16 +364,32 @@ function IdeasResults({ data }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {suggestions.map((row, i) => (
-                  <tr key={i} className="hover:bg-[#F5F1E9]/40">
-                    <td className="px-5 py-3 font-medium text-[#092137]">{row.keyword}</td>
-                    <td className="px-5 py-3 text-right text-[#092137]/70">{fmtVol(row.volume)}</td>
-                    <td className="px-5 py-3"><DifficultyBar score={row.difficulty} /></td>
-                    <td className="px-5 py-3"><CompetitionDot val={row.competition} /></td>
-                    <td className="px-5 py-3 text-right text-[#092137]/70">{fmtCpc(row.cpc)}</td>
-                    <td className="px-5 py-3 text-center"><TrendSparkline monthly={row.trend} /></td>
-                  </tr>
-                ))}
+                {suggestions.map((row, i) => {
+                  const checked = kwMap.has(row.keyword)
+                  return (
+                    <tr
+                      key={i}
+                      onClick={() => onToggle(row)}
+                      className={cn('cursor-pointer transition-colors', checked ? 'bg-blue-50/60 hover:bg-blue-50' : 'hover:bg-[#F5F1E9]/40')}
+                    >
+                      <td className="px-4 py-3 w-8">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => onToggle(row)}
+                          onClick={e => e.stopPropagation()}
+                          className="rounded border-gray-300 text-blue-600 cursor-pointer"
+                        />
+                      </td>
+                      <td className="px-3 py-3 font-medium text-[#092137]">{row.keyword}</td>
+                      <td className="px-5 py-3 text-right text-[#092137]/70">{fmtVol(row.volume)}</td>
+                      <td className="px-5 py-3"><DifficultyBar score={row.difficulty} /></td>
+                      <td className="px-5 py-3"><CompetitionDot val={row.competition} /></td>
+                      <td className="px-5 py-3 text-right text-[#092137]/70">{fmtCpc(row.cpc)}</td>
+                      <td className="px-5 py-3 text-center"><TrendSparkline monthly={row.trend} /></td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
@@ -338,6 +471,9 @@ export default function KeywordResearch() {
   const [result,    setResult]    = useState(null)
   const [error,     setError]     = useState(null)
 
+  // Keyword list — Map<keyword string, row object> so duplicates across searches are merged
+  const [kwMap, setKwMap] = useState(new Map())
+
   const { data: kwHistory, refetch: refetchKwHistory } = useKeywordResearchHistory({
     clientId: selectedClient?.id,
     limit: 15,
@@ -393,8 +529,41 @@ export default function KeywordResearch() {
     setError(null)
   }
 
+  // Keyword list handlers
+  function toggleKeyword(row) {
+    setKwMap(prev => {
+      const next = new Map(prev)
+      if (next.has(row.keyword)) {
+        next.delete(row.keyword)
+      } else {
+        next.set(row.keyword, row)
+      }
+      return next
+    })
+  }
+
+  function toggleAll(rows, currentlyAllSelected) {
+    setKwMap(prev => {
+      const next = new Map(prev)
+      if (currentlyAllSelected) {
+        rows.forEach(r => next.delete(r.keyword))
+      } else {
+        rows.forEach(r => next.set(r.keyword, r))
+      }
+      return next
+    })
+  }
+
+  function removeKeyword(keyword) {
+    setKwMap(prev => { const next = new Map(prev); next.delete(keyword); return next })
+  }
+
+  function clearList() {
+    setKwMap(new Map())
+  }
+
   return (
-    <div className="max-w-5xl mx-auto space-y-5">
+    <div className="max-w-5xl mx-auto space-y-5 pb-20">
       <div>
         <h1 className="text-xl font-bold text-[#092137]">Keyword Research</h1>
         <p className="text-sm text-[#092137]/50">
@@ -495,9 +664,27 @@ export default function KeywordResearch() {
       {/* Results */}
       {result && !loading && (
         <>
-          {result.action === 'domain' && <DomainResults items={result.items} domain={result.domain ?? input} source={result.source} />}
-          {result.action === 'ideas'  && <IdeasResults  data={{ seed: result.seed, suggestions: result.suggestions }} />}
-          {result.action === 'serp'   && <SerpResults   data={{ keyword: result.keyword, organic: result.organic, features: result.features }} />}
+          {result.action === 'domain' && (
+            <DomainResults
+              items={result.items}
+              domain={result.domain ?? input}
+              source={result.source}
+              kwMap={kwMap}
+              onToggle={toggleKeyword}
+              onToggleAll={toggleAll}
+            />
+          )}
+          {result.action === 'ideas' && (
+            <IdeasResults
+              data={{ seed: result.seed, suggestions: result.suggestions }}
+              kwMap={kwMap}
+              onToggle={toggleKeyword}
+              onToggleAll={toggleAll}
+            />
+          )}
+          {result.action === 'serp' && (
+            <SerpResults data={{ keyword: result.keyword, organic: result.organic, features: result.features }} />
+          )}
         </>
       )}
 
@@ -547,6 +734,9 @@ export default function KeywordResearch() {
           </div>
         </div>
       )}
+
+      {/* Floating keyword list tray */}
+      <KeywordListTray kwMap={kwMap} onRemove={removeKeyword} onClear={clearList} />
     </div>
   )
 }
