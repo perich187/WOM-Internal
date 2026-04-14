@@ -1,4 +1,4 @@
-import { Bell, Search, ChevronDown, LogOut } from 'lucide-react'
+import { Bell, ChevronDown, LogOut } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useState, useRef, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
@@ -6,13 +6,24 @@ import { useAuth } from '@/components/auth/AuthProvider'
 import { useProfile } from '@/lib/hooks'
 
 const PAGE_TITLES = {
-  '/':          'Dashboard',
-  '/clients':   'Clients',
-  '/accounts':  'Connected Accounts',
-  '/calendar':  'Content Calendar',
-  '/compose':   'Compose & Schedule',
-  '/analytics': 'Analytics',
-  '/settings':  'Settings',
+  '/':                        'Dashboard',
+  '/clients':                 'Clients',
+  '/accounts':                'Connected Accounts',
+  '/calendar':                'Content Calendar',
+  '/compose':                 'Compose & Schedule',
+  '/analytics':               'Analytics',
+  '/settings':                'Settings',
+  '/digital':                 'Digital Overview',
+  '/digital/keywords':        'Keyword Research',
+  '/digital/rank-tracker':    'Rank Tracker',
+  '/digital/rank-tracking':   'Rank Tracking',
+  '/digital/ai-overview':     'AI Overview',
+  '/digital/site-speed':      'Site Speed',
+  '/digital/site-audit':      'Site Audit',
+  '/digital/search-console':  'Search Console',
+  '/influencers':             'Influencers',
+  '/influencers/discover':    'Find Influencers',
+  '/influencers/campaigns':   'Campaigns',
 }
 
 function UserMenu({ user, profile }) {
@@ -81,7 +92,10 @@ export default function Header({ sidebarWidth }) {
   const navigate  = useNavigate()
   const { user }  = useAuth()
   const { data: profile } = useProfile(user?.id)
-  const title = PAGE_TITLES[location.pathname] ?? 'WOM Social'
+  // Match exact path first, then check prefix for nested routes (e.g. campaigns/:id)
+  const title = PAGE_TITLES[location.pathname]
+    ?? Object.entries(PAGE_TITLES).find(([k]) => location.pathname.startsWith(k + '/'))?.[1]
+    ?? 'WOM'
 
   return (
     <header
@@ -101,21 +115,6 @@ export default function Header({ sidebarWidth }) {
       </h1>
 
       <div className="flex items-center gap-3">
-        {/* Search */}
-        <div className="relative hidden md:block">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#092137', opacity: 0.4 }} />
-          <input
-            type="text"
-            placeholder="Search posts, clients..."
-            className="pl-9 pr-4 py-2 text-sm rounded-full w-60 transition-all"
-            style={{
-              backgroundColor: '#F5F1E9',
-              border: '2px solid #EDE8DC',
-              color: '#092137',
-            }}
-          />
-        </div>
-
         {/* Notifications */}
         <button
           className="relative w-9 h-9 rounded-full flex items-center justify-center transition-colors hover:opacity-80"
