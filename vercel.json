@@ -1,5 +1,6 @@
 {
   "rewrites": [
+    { "source": "/api/gsc-oauth", "destination": "/api/gsc-data" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }

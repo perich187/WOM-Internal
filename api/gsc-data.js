@@ -78,11 +78,107 @@ function ga4Rows(report) {
 
 // ── Handler ───────────────────────────────────────────────────────────────────
 
+// ── Google OAuth (merged from gsc-oauth.js) ──────────────────────────────────
+// Handles both the initiate (?action=auth) and callback (?code=...) flows.
+// Requests are rewritten here from /api/gsc-oauth via vercel.json.
+
+const OAUTH_SCOPES = [
+  'https://www.googleapis.com/auth/webmasters.readonly',
+  'https://www.googleapis.com/auth/analytics.readonly',
+  'https://www.googleapis.com/auth/userinfo.email',
+].join(' ')
+
+const REDIRECT_DESTINATIONS = {
+  gsc: '/digital/rank-tracking',
+  ga4: '/reporting/live-data/google-analytics',
+}
+
+async function handleOAuth(req, res) {
+  const appUrl      = process.env.VITE_APP_URL || `https://${process.env.VERCEL_URL}`
+  const redirectUri = `${appUrl}/api/gsc-oauth`
+
+  // Initiate — redirect to Google consent screen
+  if (req.query.action === 'auth') {
+    const { clientId, from = 'gsc' } = req.query
+    if (!clientId) return res.status(400).json({ error: 'clientId required' })
+    const googleClientId = process.env.GOOGLE_CLIENT_ID
+    if (!googleClientId) return res.status(500).json({ error: 'GOOGLE_CLIENT_ID not configured' })
+    const state  = Buffer.from(JSON.stringify({ clientId, from })).toString('base64')
+    const params = new URLSearchParams({
+      client_id: googleClientId, redirect_uri: redirectUri,
+      response_type: 'code', scope: OAUTH_SCOPES,
+      access_type: 'offline', prompt: 'consent', state,
+    })
+    return res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params}`)
+  }
+
+  // Callback — Google redirects back here with ?code=...&state=...
+  const { code, state: rawState, error } = req.query
+  let clientId = rawState
+  let from     = 'gsc'
+  try {
+    const decoded = JSON.parse(Buffer.from(rawState, 'base64').toString('utf8'))
+    clientId = decoded.clientId
+    from     = decoded.from ?? 'gsc'
+  } catch { /* legacy plain state */ }
+
+  const destination = REDIRECT_DESTINATIONS[from] ?? REDIRECT_DESTINATIONS.gsc
+  if (error) return res.redirect(`${destination}?gsc_error=${encodeURIComponent(error)}`)
+  if (!code || !clientId) return res.redirect(`${destination}?gsc_error=Missing+code+or+client`)
+
+  const googleClientId     = process.env.GOOGLE_CLIENT_ID
+  const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET
+  try {
+    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ code, client_id: googleClientId, client_secret: googleClientSecret, redirect_uri: redirectUri, grant_type: 'authorization_code' }),
+    })
+    const tokens = await tokenRes.json()
+    if (tokens.error) throw new Error(tokens.error_description ?? tokens.error)
+
+    const [userRes, sitesRes, ga4Res] = await Promise.all([
+      fetch('https://www.googleapis.com/oauth2/v2/userinfo', { headers: { Authorization: `Bearer ${tokens.access_token}` } }),
+      fetch('https://www.googleapis.com/webmasters/v3/sites', { headers: { Authorization: `Bearer ${tokens.access_token}` } }),
+      fetch('https://analyticsadmin.googleapis.com/v1beta/accountSummaries?pageSize=50', { headers: { Authorization: `Bearer ${tokens.access_token}` } }),
+    ])
+    const [user, sitesData, ga4Data] = await Promise.all([userRes.json(), sitesRes.json(), ga4Res.json()])
+
+    const sites    = (sitesData.siteEntry ?? []).map(s => s.siteUrl)
+    const ga4Props = []
+    for (const account of ga4Data.accountSummaries ?? []) {
+      for (const prop of account.propertySummaries ?? []) {
+        ga4Props.push({ id: prop.property.replace('properties/', ''), name: prop.displayName, accountName: account.displayName })
+      }
+    }
+
+    const supabase = createClient(process.env.VITE_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
+    await supabase.from('digital_gsc_connections').upsert({
+      client_id: clientId, google_email: user.email ?? null,
+      access_token: tokens.access_token, refresh_token: tokens.refresh_token ?? null,
+      expires_at: tokens.expires_in ? new Date(Date.now() + tokens.expires_in * 1000).toISOString() : null,
+      sites, ga4_properties: ga4Props, updated_at: new Date().toISOString(),
+    }, { onConflict: 'client_id' })
+
+    return res.redirect(`${destination}?gsc_connected=1&client=${clientId}`)
+  } catch (err) {
+    console.error('[gsc-oauth]', err)
+    return res.redirect(`${destination}?gsc_error=${encodeURIComponent(err.message)}`)
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
   if (req.method === 'OPTIONS') return res.status(200).end()
+
+  // Route OAuth flows before the clientId gate
+  if (req.query.action === 'auth' || req.query.code || req.query.error) {
+    return handleOAuth(req, res)
+  }
 
   const { type = 'gsc', clientId } = req.query
   if (!clientId) return res.status(400).json({ error: 'clientId required' })
