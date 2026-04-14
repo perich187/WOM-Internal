@@ -18,11 +18,16 @@ const MODES = [
 ]
 
 const LOCATIONS = [
-  { code: 2036,  label: 'Australia' },
-  { code: 2840,  label: 'United States' },
-  { code: 2826,  label: 'United Kingdom' },
-  { code: 2124,  label: 'Canada' },
-  { code: 2554,  label: 'New Zealand' },
+  { code: 2036,    label: 'Australia' },
+  { code: 1009230, label: '  Perth, WA' },
+  { code: 1003542, label: '  Sydney, NSW' },
+  { code: 1007820, label: '  Melbourne, VIC' },
+  { code: 1009316, label: '  Brisbane, QLD' },
+  { code: 1007314, label: '  Adelaide, SA' },
+  { code: 2840,    label: 'United States' },
+  { code: 2826,    label: 'United Kingdom' },
+  { code: 2124,    label: 'Canada' },
+  { code: 2554,    label: 'New Zealand' },
 ]
 
 // ── Small helpers ─────────────────────────────────────────────────────────────
