@@ -20,6 +20,7 @@ const PAGE_TITLES = {
   '/digital/ai-overview':     'AI Overview',
   '/digital/site-speed':      'Site Speed',
   '/digital/site-audit':      'Site Audit',
+  '/digital/on-page':         'On-Page Optimisation',
   '/digital/search-console':  'Search Console',
   '/influencers':             'Influencers',
   '/influencers/discover':    'Find Influencers',

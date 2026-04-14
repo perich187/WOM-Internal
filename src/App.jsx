@@ -28,6 +28,7 @@ import RankTracker from './pages/digital/RankTracker'
 import AIOverview from './pages/digital/AIOverview'
 import SiteSpeed from './pages/digital/SiteSpeed'
 import SiteAudit from './pages/digital/SiteAudit'
+import OnPage from './pages/digital/OnPage'
 import ReportingLayout from './pages/reporting/ReportingLayout'
 import ReportingHome from './pages/reporting/ReportingHome'
 import ReportBuilder from './pages/reporting/ReportBuilder'
@@ -88,6 +89,7 @@ export default function App() {
               <Route path="ai-overview"     element={<AIOverview />} />
               <Route path="site-speed"      element={<SiteSpeed />} />
               <Route path="site-audit"      element={<SiteAudit />} />
+              <Route path="on-page"         element={<OnPage />} />
             </Route>
 
             {/* Reporting workspace */}

@@ -1171,6 +1171,47 @@ async function handleFinalize(req, res) {
   return res.status(200).json(finalResult)
 }
 
+// ── On-Page Instant Analysis (DataForSEO) ─────────────────────────────────────
+
+function dfsAuth() {
+  const login    = process.env.DATAFORSEO_LOGIN
+  const password = process.env.DATAFORSEO_PASSWORD
+  if (!login || !password) throw new Error('DataForSEO credentials not configured')
+  return 'Basic ' + Buffer.from(`${login}:${password}`).toString('base64')
+}
+
+async function handleInstant(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'POST required' })
+  const { url } = req.body ?? {}
+  if (!url) return res.status(400).json({ error: 'url required' })
+
+  try {
+    const resp = await fetch('https://api.dataforseo.com/v3/on_page/instant_pages', {
+      method:  'POST',
+      headers: { Authorization: dfsAuth(), 'Content-Type': 'application/json' },
+      body:    JSON.stringify([{ url, enable_javascript: false, load_resources: true }]),
+    })
+    const data = await resp.json()
+
+    if (data.status_code !== 20000) {
+      return res.status(400).json({ error: data.status_message ?? 'DataForSEO error' })
+    }
+
+    const taskCode = data.tasks?.[0]?.status_code
+    if (taskCode && taskCode !== 20000) {
+      return res.status(400).json({ error: data.tasks[0].status_message ?? 'Task error' })
+    }
+
+    const page = data.tasks?.[0]?.result?.[0]?.items?.[0]
+    if (!page) return res.status(404).json({ error: 'No page data returned — the URL may not be reachable' })
+
+    return res.status(200).json({ ok: true, page })
+  } catch (err) {
+    console.error('[on-page/instant]', err)
+    return res.status(500).json({ error: err.message })
+  }
+}
+
 // ── Main handler ──────────────────────────────────────────────────────────────
 
 export default async function handler(req, res) {
@@ -1185,6 +1226,7 @@ export default async function handler(req, res) {
   if (action === 'status')   return handleStatus(req, res)
   if (action === 'crawl')    return handleCrawl(req, res)
   if (action === 'finalize') return handleFinalize(req, res)
+  if (action === 'instant')  return handleInstant(req, res)
 
   return res.status(400).json({ error: `Unknown action: ${action}` })
 }

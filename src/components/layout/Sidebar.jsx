@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Users, Link2, CalendarDays,
   PenSquare, BarChart3, Settings, ChevronLeft, ChevronRight,
   Search, TrendingUp, Sparkles, Zap, ClipboardCheck, Globe,
-  FileBarChart, ChevronDown, Star, UserPlus, Megaphone,
+  FileBarChart, ChevronDown, Star, UserPlus, Megaphone, ScanSearch,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import WorkspaceSwitcher from './WorkspaceSwitcher'
@@ -33,6 +33,7 @@ const DIGITAL_NAV = [
   { to: '/digital/ai-overview',    label: 'AI Overview',      icon: Sparkles },
   { to: '/digital/site-speed',     label: 'Site Speed',       icon: Zap },
   { to: '/digital/site-audit',     label: 'Site Audit',       icon: ClipboardCheck },
+  { to: '/digital/on-page',        label: 'On-Page',          icon: ScanSearch },
 ]
 
 // ── Reporting grouped nav ─────────────────────────────────────────────────────
