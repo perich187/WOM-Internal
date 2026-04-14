@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Users, Link2, CalendarDays,
   PenSquare, BarChart3, Settings, ChevronLeft, ChevronRight,
   Search, TrendingUp, Sparkles, Zap, ClipboardCheck, Globe,
-  FileBarChart, ChevronDown, Star, UserPlus, Megaphone, ScanSearch,
+  FileBarChart, ChevronDown, Star, UserPlus, Megaphone, ScanSearch, Activity,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import WorkspaceSwitcher from './WorkspaceSwitcher'
@@ -21,6 +21,7 @@ const SOCIAL_NAV = [
   { to: '/influencers',            label: 'Influencers',        icon: Star, exact: true },
   { to: '/influencers/discover',   label: 'Find Influencers',   icon: UserPlus },
   { to: '/influencers/campaigns',  label: 'Campaigns',          icon: Megaphone },
+  { to: '/heartbeat',             label: 'Heartbeat Monitor',  icon: Activity },
 ]
 
 // ── Digital nav ───────────────────────────────────────────────────────────────

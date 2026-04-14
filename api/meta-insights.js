@@ -238,7 +238,9 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
   if (req.method === 'OPTIONS') return res.status(200).end()
 
-  const { clientId, dateFrom, dateTo } = req.query
+  const { clientId, dateFrom, dateTo, action } = req.query
+
+  if (action === 'heartbeat') return handleHeartbeat(req, res)
 
   if (!clientId)             return res.status(400).json({ error: 'clientId required' })
   if (!dateFrom || !dateTo)  return res.status(400).json({ error: 'dateFrom and dateTo required (YYYY-MM-DD)' })
@@ -291,4 +293,85 @@ export default async function handler(req, res) {
   }
 
   return res.status(200).json(results)
+}
+
+// ── Heartbeat: last post date for all connected accounts ──────────────────────
+
+async function lastPostDate(platform, platformUserId, token) {
+  try {
+    if (platform === 'facebook') {
+      const data = await graphGet(`/${platformUserId}/published_posts`, {
+        fields:       'created_time',
+        limit:        1,
+        access_token: token,
+      })
+      const ts = data?.data?.[0]?.created_time
+      return ts ? new Date(ts).toISOString() : null
+    }
+    if (platform === 'instagram') {
+      const data = await graphGet(`/${platformUserId}/media`, {
+        fields:       'timestamp',
+        limit:        1,
+        access_token: token,
+      })
+      const ts = data?.data?.[0]?.timestamp
+      return ts ? new Date(ts).toISOString() : null
+    }
+  } catch (err) {
+    const isAuth = /OAuthException|Invalid OAuth|token.*expir|access token.*invalid/i.test(err.message)
+    return isAuth ? '__token_expired__' : null
+  }
+  return null
+}
+
+async function handleHeartbeat(req, res) {
+  const supabase = db()
+
+  // Load all connected FB/IG accounts with client info
+  const { data: accounts, error } = await supabase
+    .from('social_accounts')
+    .select('client_id, platform, platform_user_id, access_token, clients(id, client_name, color)')
+    .eq('connected', true)
+    .in('platform', ['facebook', 'instagram'])
+    .not('access_token', 'is', null)
+
+  if (error) return res.status(500).json({ error: error.message })
+
+  // Fetch last post for all accounts in parallel
+  const checks = await Promise.all(
+    (accounts ?? []).map(async acc => {
+      const last = await lastPostDate(acc.platform, acc.platform_user_id, acc.access_token)
+      const tokenExpired = last === '__token_expired__'
+      const lastPost     = tokenExpired ? null : last
+      const daysSince    = lastPost
+        ? Math.floor((Date.now() - new Date(lastPost).getTime()) / 86_400_000)
+        : null
+
+      // If token expired, mark as disconnected
+      if (tokenExpired) {
+        await supabase
+          .from('social_accounts')
+          .update({ connected: false, updated_at: new Date().toISOString() })
+          .eq('client_id', acc.client_id)
+          .eq('platform', acc.platform)
+      }
+
+      return {
+        clientId:   acc.client_id,
+        clientName: acc.clients?.client_name ?? 'Unknown',
+        color:      acc.clients?.color ?? '#092137',
+        platform:   acc.platform,
+        lastPost,
+        daysSince,
+        tokenExpired,
+        status: tokenExpired      ? 'disconnected'
+              : daysSince === null ? 'no_posts'
+              : daysSince <= 7    ? 'ok'
+              : daysSince <= 14   ? 'warning'
+              :                     'critical',
+      }
+    })
+  )
+
+  return res.status(200).json({ ok: true, checks, checkedAt: new Date().toISOString() })
 }
