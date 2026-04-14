@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import {
   Search, TrendingUp, TrendingDown, Minus, Globe, Lightbulb,
-  LayoutList, Loader2, ExternalLink, AlertCircle, Download,
+  LayoutList, Loader2, ExternalLink, AlertCircle, Download, Info,
 } from 'lucide-react'
 import { useDigitalClient } from '@/lib/digitalClient'
 import { cn } from '@/lib/utils'
@@ -93,27 +93,41 @@ function exportCsv(rows, filename) {
 
 // ── Domain Analysis results ──────────────────────────────────────────────────
 
-function DomainResults({ data, domain }) {
-  if (!data?.length) return (
+function DomainResults({ items, domain, source }) {
+  if (!items?.length) return (
     <div className="flex items-start gap-3 bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-sm text-yellow-900">
       <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
       <div>
-        <p className="font-semibold">No organic keywords found for {domain}</p>
-        <p className="mt-1 text-yellow-800/70">The domain may be new, have very low authority, or not indexed in Australia yet.</p>
+        <p className="font-semibold">No keywords found for {domain}</p>
+        <p className="mt-1 text-yellow-800/70">The domain may be new, have very low authority, or not indexed yet. Try a competitor domain instead.</p>
       </div>
     </div>
   )
 
+  const isAdsSuggestion = source === 'ads_suggestions'
+
   return (
+    <div className="space-y-3">
+      {isAdsSuggestion && (
+        <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm text-blue-700">
+          <Info size={15} className="flex-shrink-0 mt-0.5" />
+          <p>
+            <span className="font-semibold">Showing Google Ads keyword suggestions</span> — this domain doesn't have enough organic ranking data in DataForSEO's database yet.
+            These are keywords Google considers relevant to the site. Position data isn't available for this source.
+          </p>
+        </div>
+      )}
     <div className="bg-white rounded-xl border border-[#EDE8DC] overflow-hidden">
       <div className="px-5 py-3.5 border-b border-[#EDE8DC] flex items-center justify-between">
         <div>
-          <p className="text-sm font-semibold text-[#092137]">Organic Keywords — {domain}</p>
-          <p className="text-xs text-[#092137]/40 mt-0.5">{data.length} keywords found</p>
+          <p className="text-sm font-semibold text-[#092137]">
+            {isAdsSuggestion ? 'Keyword Suggestions' : 'Organic Keywords'} — {domain}
+          </p>
+          <p className="text-xs text-[#092137]/40 mt-0.5">{items.length} keywords found</p>
         </div>
         <button
           onClick={() => exportCsv(
-            data.map(r => ({ keyword: r.keyword, position: r.position, volume: r.volume, difficulty: r.difficulty, cpc: r.cpc, url: r.url })),
+            items.map(r => ({ keyword: r.keyword, position: r.position, volume: r.volume, difficulty: r.difficulty, cpc: r.cpc, url: r.url })),
             `${domain}-keywords.csv`
           )}
           className="flex items-center gap-1.5 text-xs text-[#092137]/50 hover:text-[#092137] transition-colors"
@@ -126,46 +140,53 @@ function DomainResults({ data, domain }) {
           <thead className="bg-[#F5F1E9] text-xs font-semibold text-[#092137]/60 uppercase tracking-wider">
             <tr>
               <th className="text-left px-5 py-3">Keyword</th>
-              <th className="text-right px-5 py-3">Position</th>
+              {!isAdsSuggestion && <th className="text-right px-5 py-3">Position</th>}
               <th className="text-right px-5 py-3">Volume</th>
-              <th className="text-left px-5 py-3">Difficulty</th>
+              {!isAdsSuggestion && <th className="text-left px-5 py-3">Difficulty</th>}
               <th className="text-left px-5 py-3">Competition</th>
               <th className="text-right px-5 py-3">CPC</th>
               <th className="text-center px-5 py-3">Trend</th>
-              <th className="px-5 py-3"></th>
+              {!isAdsSuggestion && <th className="px-5 py-3"></th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
-            {data.map((row, i) => (
+            {items.map((row, i) => (
               <tr key={i} className="hover:bg-[#F5F1E9]/40">
                 <td className="px-5 py-3 font-medium text-[#092137]">{row.keyword}</td>
-                <td className="px-5 py-3 text-right">
-                  <span className={cn(
-                    'text-xs font-bold px-2 py-0.5 rounded-full',
-                    row.position <= 3  ? 'bg-green-100 text-green-700' :
-                    row.position <= 10 ? 'bg-blue-100 text-blue-700' :
-                                         'bg-gray-100 text-gray-600'
-                  )}>
-                    #{row.position ?? '—'}
-                  </span>
-                </td>
+                {!isAdsSuggestion && (
+                  <td className="px-5 py-3 text-right">
+                    {row.position ? (
+                      <span className={cn(
+                        'text-xs font-bold px-2 py-0.5 rounded-full',
+                        row.position <= 3  ? 'bg-green-100 text-green-700' :
+                        row.position <= 10 ? 'bg-blue-100 text-blue-700' :
+                                             'bg-gray-100 text-gray-600'
+                      )}>
+                        #{row.position}
+                      </span>
+                    ) : <span className="text-xs text-[#092137]/30">—</span>}
+                  </td>
+                )}
                 <td className="px-5 py-3 text-right text-[#092137]/70">{fmtVol(row.volume)}</td>
-                <td className="px-5 py-3"><DifficultyBar score={row.difficulty} /></td>
+                {!isAdsSuggestion && <td className="px-5 py-3"><DifficultyBar score={row.difficulty} /></td>}
                 <td className="px-5 py-3"><CompetitionDot val={row.competition} /></td>
                 <td className="px-5 py-3 text-right text-[#092137]/70">{fmtCpc(row.cpc)}</td>
                 <td className="px-5 py-3 text-center"><TrendSparkline monthly={row.trend} /></td>
-                <td className="px-5 py-3 text-right">
-                  {row.url && (
-                    <a href={row.url} target="_blank" rel="noreferrer" className="text-[#092137]/30 hover:text-blue-500">
-                      <ExternalLink size={13} />
-                    </a>
-                  )}
-                </td>
+                {!isAdsSuggestion && (
+                  <td className="px-5 py-3 text-right">
+                    {row.url && (
+                      <a href={row.url} target="_blank" rel="noreferrer" className="text-[#092137]/30 hover:text-blue-500">
+                        <ExternalLink size={13} />
+                      </a>
+                    )}
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+    </div>
     </div>
   )
 }
@@ -459,7 +480,7 @@ export default function KeywordResearch() {
       {/* Results */}
       {result && !loading && (
         <>
-          {result.action === 'domain' && <DomainResults data={result.items ?? result} domain={result.domain ?? input} />}
+          {result.action === 'domain' && <DomainResults items={result.items} domain={result.domain ?? input} source={result.source} />}
           {result.action === 'ideas'  && <IdeasResults  data={{ seed: result.seed, suggestions: result.suggestions }} />}
           {result.action === 'serp'   && <SerpResults   data={{ keyword: result.keyword, organic: result.organic, features: result.features }} />}
         </>
