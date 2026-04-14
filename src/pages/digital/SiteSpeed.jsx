@@ -248,6 +248,7 @@ export default function SiteSpeed() {
           <div className="px-5 py-3.5 border-b border-[#EDE8DC] flex items-center gap-2">
             <History size={14} className="text-[#092137]/40" />
             <p className="text-sm font-semibold text-[#092137]">Recent Tests</p>
+            <span className="text-xs text-[#092137]/40 ml-1">— click a row to reload results</span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -269,7 +270,12 @@ export default function SiteSpeed() {
                     <tr
                       key={row.id}
                       className="hover:bg-[#F5F1E9]/40 cursor-pointer"
-                      onClick={() => { setUrl(row.url); setDevice(row.strategy); setResult({ ...row, fetchTime: row.fetch_time }) }}
+                      onClick={() => {
+                        setUrl(row.url)
+                        setDevice(row.strategy)
+                        setResult({ ...row, fetchTime: row.fetch_time })
+                        window.scrollTo({ top: 0, behavior: 'smooth' })
+                      }}
                     >
                       <td className="px-5 py-3 text-[#092137]/70 truncate max-w-xs">{row.url}</td>
                       <td className="px-3 py-3 text-center">

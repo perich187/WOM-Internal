@@ -26,7 +26,9 @@ export default async function handler(req, res) {
       `https://www.googleapis.com/pagespeedonline/v5/runPagespeed` +
       `?url=${encodeURIComponent(url)}&key=${key}&strategy=${strategy}`
 
-    const psi = await fetch(endpoint)
+    // Forward the browser's Referer/Origin so Google API key referrer restrictions pass through
+    const referer = req.headers['referer'] || req.headers['origin'] || ''
+    const psi = await fetch(endpoint, referer ? { headers: { Referer: referer } } : undefined)
     const data = await psi.json()
 
     if (data.error) {

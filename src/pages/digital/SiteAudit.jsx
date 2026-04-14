@@ -1104,6 +1104,7 @@ export default function SiteAudit() {
           <div className="px-5 py-3.5 border-b border-[#EDE8DC] flex items-center gap-2">
             <History size={14} className="text-[#092137]/40" />
             <p className="text-sm font-semibold text-[#092137]">Recent Audits</p>
+            <span className="text-xs text-[#092137]/40 ml-1">— click a row to reload results</span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -1121,10 +1122,21 @@ export default function SiteAudit() {
                   const r = row.result ?? {}
                   const score = r.overallScore ?? null
                   const scoreColor = score == null ? '#999' : score >= 80 ? '#10B981' : score >= 60 ? '#F59E0B' : '#EF4444'
+                  const issueCount = (r.criticalCount ?? 0) + (r.errorCount ?? 0) + (r.warningCount ?? 0)
                   let displayDomain = row.url
                   try { displayDomain = new URL(row.url).hostname.replace(/^www\./, '') } catch {}
                   return (
-                    <tr key={row.id} className="hover:bg-[#F5F1E9]/40">
+                    <tr
+                      key={row.id}
+                      className="hover:bg-[#F5F1E9]/40 cursor-pointer"
+                      title="Click to view full results"
+                      onClick={() => {
+                        setDomain(displayDomain)
+                        setResult(r)
+                        setPhase('complete')
+                        window.scrollTo({ top: 0, behavior: 'smooth' })
+                      }}
+                    >
                       <td className="px-5 py-3 text-[#092137]/70 truncate max-w-xs">{displayDomain}</td>
                       <td className="px-3 py-3 text-center">
                         {score != null
@@ -1132,12 +1144,12 @@ export default function SiteAudit() {
                           : <span className="text-xs text-[#092137]/30">—</span>}
                       </td>
                       <td className="px-3 py-3 text-center text-xs text-[#092137]/60">
-                        {r.pagesChecked ?? '—'}
+                        {r.pagesAudited ?? '—'}
                       </td>
                       <td className="px-3 py-3 text-center text-xs text-[#092137]/60">
-                        {r.issueCount != null
-                          ? <span className={r.issueCount > 0 ? 'text-red-500 font-medium' : 'text-green-600'}>{r.issueCount}</span>
-                          : '—'}
+                        <span className={issueCount > 0 ? 'text-red-500 font-medium' : 'text-green-600'}>
+                          {issueCount}
+                        </span>
                       </td>
                       <td className="px-5 py-3 text-right text-xs text-[#092137]/40">
                         {new Date(row.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: '2-digit' })}
