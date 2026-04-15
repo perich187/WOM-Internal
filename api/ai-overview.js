@@ -1,12 +1,105 @@
 /**
- * AI SEO Overview — fetches a URL's HTML then asks Claude to analyse it
- * GET /api/ai-overview?url=https://example.com
+ * AI Overview — two actions:
+ *   GET  /api/ai-overview?url=...               SEO page analysis
+ *   POST /api/ai-overview?action=content-ideas  Social content idea generator
  */
 import Anthropic from '@anthropic-ai/sdk'
+
+const PLATFORM_TRENDS = {
+  instagram: `Instagram 2025 trends:
+- Reels 15–60s dominate. Hook must appear in first 1–2 seconds via text overlay or bold visual.
+- Lo-fi, authentic aesthetic outperforms polished corporate content.
+- Trending audio/sounds are essential for reach.
+- Popular formats: "Day in the life", "Get ready with me", educational carousels, before/after reveals.
+- Captions should be conversational. Strong CTA in caption.`,
+
+  tiktok: `TikTok 2025 trends:
+- Hook in first 1–3 seconds or users scroll. Start with the payoff.
+- Fast cuts (every 2–3s), trending sounds, text overlays throughout.
+- Raw/authentic wins over polished. Creator-style > brand-style.
+- Top formats: POV storytelling, "Tell me without telling me", green screen commentary, "Things I wish I knew", day-in-the-life walkthroughs.
+- Strong pattern interrupt in the first frame.`,
+
+  facebook: `Facebook 2025 trends:
+- Longer-form video (1–3 min) works for warm audiences. Short Reels for cold.
+- Community and local business angle resonates strongly.
+- Before/after content, customer testimonials, and behind-the-scenes perform well.
+- Paid ads: lead generation carousels, offer-focused creative, social proof headlines.
+- Captions with questions drive comments and shares.`,
+
+  linkedin: `LinkedIn 2025 trends:
+- Personal story + professional lesson performs best (the "I used to think X, then Y happened" hook).
+- Document carousels (swipe posts) get high organic reach.
+- Thought leadership with a contrarian or data-backed take.
+- Behind-the-scenes of running a business, team culture, wins and failures.
+- First line must stop the scroll — no pleasantries, lead with the insight.`,
+}
+
+async function handleContentIdeas(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'POST required' })
+
+  const { platform, contentType, industry, clientName, topic, tone } = req.body ?? {}
+  if (!platform || !industry) return res.status(400).json({ error: 'platform and industry required' })
+
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey) return res.status(500).json({ error: 'ANTHROPIC_API_KEY not configured' })
+
+  const client = new Anthropic({ apiKey })
+
+  const systemPrompt = `You are a senior social media content strategist at Word of Mouth Agency (WOM), an Australian marketing agency. You specialise in creating scroll-stopping, high-converting social media content for SMBs. You understand platform algorithms, human psychology, and what actually gets results — not just likes.`
+
+  const userPrompt = `Generate exactly 3 unique ${contentType ?? 'organic'} content ideas for ${platform} for a ${industry} business${clientName ? ` called "${clientName}"` : ''}.
+${topic ? `Focus on this topic/theme: "${topic}"` : ''}
+${tone ? `Preferred tone: ${tone}` : ''}
+
+${PLATFORM_TRENDS[platform.toLowerCase()] ?? ''}
+
+Return ONLY a raw JSON array (no markdown, no explanation). Each object must have exactly:
+{
+  "id": number,
+  "title": "short catchy content concept title",
+  "angle": "one sentence describing the creative angle/approach",
+  "tone": "one of: Educational | Humorous | Inspirational | Behind-the-scenes | Promotional | Storytelling | Trending",
+  "hook": "the exact opening line or visual description for the first 1-3 seconds",
+  "duration": "e.g. 30 seconds | 60 seconds | 2 minutes | Carousel (7 slides)",
+  "storyboard": [
+    { "scene": 1, "visual": "what the viewer sees", "audio": "what is said or heard", "duration": "5s" }
+  ],
+  "script": "full word-for-word script with scene cues in [brackets]. Write exactly what would be spoken on camera or in voiceover.",
+  "hashtags": ["#tag1", "#tag2"],
+  "musicMood": "description of ideal background music/audio vibe",
+  "cta": "the specific call-to-action"
+}
+
+Make each idea distinct — different angles, tones, and formats. Write scripts in Australian English. Be specific and actionable, not generic.`
+
+  try {
+    const message = await client.messages.create({
+      model:      'claude-sonnet-4-6',
+      max_tokens: 4000,
+      messages:   [{ role: 'user', content: userPrompt }],
+      system:     systemPrompt,
+    })
+
+    const text = message.content[0]?.text ?? ''
+    const jsonMatch = text.match(/\[[\s\S]*\]/)
+    let ideas = []
+    if (jsonMatch) {
+      try { ideas = JSON.parse(jsonMatch[0]) } catch (_) { /* leave empty */ }
+    }
+
+    return res.status(200).json({ ok: true, ideas, platform, contentType, industry })
+  } catch (err) {
+    console.error('[content-ideas]', err)
+    return res.status(500).json({ error: err.message })
+  }
+}
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   if (req.method === 'OPTIONS') return res.status(200).end()
+
+  if (req.query.action === 'content-ideas') return handleContentIdeas(req, res)
 
   const { url } = req.query
   if (!url) return res.status(400).json({ error: 'url param required' })

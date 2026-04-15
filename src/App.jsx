@@ -21,6 +21,7 @@ import FindInfluencers from './pages/influencers/FindInfluencers'
 import Campaigns from './pages/influencers/Campaigns'
 import CampaignDetail from './pages/influencers/CampaignDetail'
 import HeartbeatMonitor from './pages/social/HeartbeatMonitor'
+import ContentIdeas from './pages/social/ContentIdeas'
 import DigitalLayout from './pages/digital/DigitalLayout'
 import DigitalHome from './pages/digital/DigitalHome'
 import KeywordResearch from './pages/digital/KeywordResearch'
@@ -75,6 +76,9 @@ export default function App() {
 
             {/* Heartbeat Monitor */}
             <Route path="heartbeat" element={<HeartbeatMonitor />} />
+
+            {/* Content Ideas */}
+            <Route path="content-ideas" element={<ContentIdeas />} />
 
             {/* Influencers */}
             <Route path="influencers" element={<InfluencersLayout />}>

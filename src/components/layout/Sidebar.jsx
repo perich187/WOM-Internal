@@ -22,6 +22,7 @@ const SOCIAL_NAV = [
   { to: '/influencers/discover',   label: 'Find Influencers',   icon: UserPlus },
   { to: '/influencers/campaigns',  label: 'Campaigns',          icon: Megaphone },
   { to: '/heartbeat',             label: 'Heartbeat Monitor',  icon: Activity },
+  { to: '/content-ideas',         label: 'Content Ideas',      icon: Sparkles },
 ]
 
 // ── Digital nav ───────────────────────────────────────────────────────────────

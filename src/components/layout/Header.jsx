@@ -23,6 +23,7 @@ const PAGE_TITLES = {
   '/digital/on-page':         'On-Page Optimisation',
   '/digital/search-console':  'Search Console',
   '/heartbeat':               'Heartbeat Monitor',
+  '/content-ideas':           'Content Ideas',
   '/influencers':             'Influencers',
   '/influencers/discover':    'Find Influencers',
   '/influencers/campaigns':   'Campaigns',
