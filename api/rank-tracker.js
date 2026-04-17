@@ -289,33 +289,45 @@ export default async function handler(req, res) {
 
     let totalCost = (volumeResult.cost ?? 0) + (diffResult.cost ?? 0)
 
-    // Check rankings one by one (avoid rate limits)
+    // Check all rankings in parallel to stay within Vercel's function timeout
     const checkedAt = new Date().toISOString()
-    let checked = 0
 
-    for (const kw of keywords) {
-      try {
-        const domain  = kw.domain || clientDomain
-        const ranking = await checkKeywordRanking(kw.keyword, domain, kw.location_code, kw.language_code)
-        const metrics = volumeMap[kw.keyword] ?? {}
-        totalCost += ranking.cost ?? 0
+    const rankResults = await Promise.all(
+      keywords.map(async kw => {
+        try {
+          const domain  = kw.domain || clientDomain
+          const ranking = await checkKeywordRanking(kw.keyword, domain, kw.location_code, kw.language_code)
+          return { kw, ranking, ok: true }
+        } catch (err) {
+          console.error(`[rank-tracker] ${kw.keyword}:`, err.message)
+          return { kw, ok: false }
+        }
+      })
+    )
 
-        await supabase.from('rank_tracker_results').insert({
-          keyword_id:    kw.id,
-          client_id:     clientId,
-          position:      ranking.position,
-          url:           ranking.url,
-          serp_features: ranking.serpFeatures,
-          volume:        metrics.volume ?? null,
-          difficulty:    diffMap[kw.keyword] ?? null,
-          checked_at:    checkedAt,
-        })
-        checked++
-      } catch (err) {
-        console.error(`[rank-tracker] ${kw.keyword}:`, err.message)
-      }
+    // Batch insert all results
+    const rows = []
+    for (const { kw, ranking, ok } of rankResults) {
+      if (!ok) continue
+      const metrics = volumeMap[kw.keyword] ?? {}
+      totalCost += ranking.cost ?? 0
+      rows.push({
+        keyword_id:    kw.id,
+        client_id:     clientId,
+        position:      ranking.position,
+        url:           ranking.url,
+        serp_features: ranking.serpFeatures,
+        volume:        metrics.volume ?? null,
+        difficulty:    diffMap[kw.keyword] ?? null,
+        checked_at:    checkedAt,
+      })
     }
 
+    if (rows.length) {
+      await supabase.from('rank_tracker_results').insert(rows)
+    }
+
+    const checked = rows.length
     const costUsd = Math.round(totalCost * 10000) / 10000
     console.log(`[rank-tracker] check complete — ${checked}/${keywords.length} keywords, total cost: $${costUsd}`)
     return res.json({ checked, total: keywords.length, costUsd })

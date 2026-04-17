@@ -368,12 +368,13 @@ export default function RankTracker() {
     try {
       const res  = await fetch(`/api/rank-tracker?action=check&clientId=${clientId}`, { method: 'POST' })
       const data = await res.json()
+      if (!res.ok || data.error) throw new Error(data.error ?? `Server error ${res.status}`)
       if (data.costUsd != null) setLastCost(data.costUsd)
       const costStr = data.costUsd != null ? ` · Cost: $${data.costUsd.toFixed(4)} USD` : ''
       toast.success(`Checked ${data.checked} of ${data.total} keywords${costStr}`)
       load()
-    } catch {
-      toast.error('Rank check failed')
+    } catch (err) {
+      toast.error(`Rank check failed: ${err.message}`)
     } finally {
       setChecking(false)
     }
